@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Panel</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{--bg:#0d0d0d;--surface:#1a1a1a;--surface2:#242424;--border:rgba(255,255,255,0.08);--accent:#ff6b35;--gold:#ffd700;--green:#00e676;--red:#ff5252;--text:#f0f0f0;--muted:#888;--radius:14px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);padding:16px;padding-bottom:24px}
+  h2{font-size:18px;margin-bottom:16px;color:var(--accent)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+  .card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px}
+  .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+  .stat{background:var(--surface2);border-radius:10px;padding:14px;text-align:center}
+  .stat-n{font-size:26px;font-weight:900;color:var(--gold)}
+  .stat-l{font-size:11px;color:var(--muted);margin-top:3px}
+  .input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;outline:none;margin-bottom:8px}
+  .input:focus{border-color:var(--accent)}
+  .btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),#e040fb);color:white}
+  .btn-danger{background:rgba(255,82,82,.2);color:var(--red);border:1px solid rgba(255,82,82,.3)}
+  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+  .forcesub-item{background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+  .badge{font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(0,230,118,.15);color:var(--green)}
+  .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-60px);background:#333;color:#fff;padding:10px 20px;border-radius:20px;z-index:99;transition:transform .3s;pointer-events:none}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<h2>🛡️ Admin Panel</h2>
+
+<!-- Stats -->
+<div class="card">
+  <div class="card-title">📊 User Statistics</div>
+  <div class="stats-grid">
+    <div class="stat"><div class="stat-n" id="stTotal">-</div><div class="stat-l">Total Users</div></div>
+    <div class="stat"><div class="stat-n" id="stActive">-</div><div class="stat-l">Active</div></div>
+    <div class="stat"><div class="stat-n" id="stBlocked">-</div><div class="stat-l">Blocked</div></div>
+    <div class="stat"><div class="stat-n" id="stReports">-</div><div class="stat-l">Pending Reports</div></div>
+  </div>
+  <button class="btn btn-secondary" onclick="loadStats()">🔄 Refresh</button>
+</div>
+
+<!-- Delete Ad -->
+<div class="card">
+  <div class="card-title">🗑️ Ad Delete Karo</div>
+  <input class="input" id="delAdId" placeholder="Ad ID paste karo..."/>
+  <button class="btn btn-danger" onclick="adminDeleteAd()">🗑️ Delete Ad</button>
+</div>
+
+<!-- Broadcast -->
+<div class="card">
+  <div class="card-title">📡 Manual Broadcast</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Saare approved ads ko turant queue mein push karo.</div>
+  <button class="btn btn-primary" onclick="triggerBroadcast()">📡 Mega Broadcast Trigger Karo</button>
+</div>
+
+<!-- Force-Sub Channels -->
+<div class="card">
+  <div class="card-title">📢 Force-Sub Channels</div>
+  <div id="forcesubList" style="margin-bottom:10px">Loading...</div>
+  <div style="font-size:12px;color:var(--muted)">Add/Remove karne ke liye bot commands use karo:<br><code>/addforcesub -100xxxxx</code><br><code>/removefchannel -100xxxxx</code></div>
+</div>
+
+<script>
+const tg      = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+const headers = { 'Content-Type':'application/json', 'X-Telegram-Init-Data': tg?.initData||'' };
+
+async function loadStats() {
+  try {
+    const r = await fetch('/api/admin/stats', { headers });
+    const d = await r.json();
+    if (d.error) return showToast('❌ ' + d.error);
+    document.getElementById('stTotal').textContent   = d.total;
+    document.getElementById('stActive').textContent  = d.active;
+    document.getElementById('stBlocked').textContent = d.blocked;
+    document.getElementById('stReports').textContent = d.pending_reports;
+  } catch(e) { showToast('Error loading stats'); }
+}
+
+async function adminDeleteAd() {
+  const id = document.getElementById('delAdId').value.trim();
+  if (!id) return showToast('Ad ID daalo pehle!');
+  if (!confirm(`Ad "${id}" delete karna hai?`)) return;
+  try {
+    const r = await fetch('/api/admin/delete_ad', { method:'POST', headers, body: JSON.stringify({ad_id:id}) });
+    const d = await r.json();
+    showToast(d.success ? '✅ Ad delete ho gaya!' : '❌ ' + d.error);
+    if (d.success) document.getElementById('delAdId').value = '';
+  } catch(e) { showToast('Error'); }
+}
+
+async function triggerBroadcast() {
+  try {
+    const r = await fetch('/api/admin/broadcast', { method:'POST', headers, body:'{}' });
+    const d = await r.json();
+    showToast(d.message || '✅ Done!');
+  } catch(e) { showToast('Error'); }
+}
+
+async function loadForceSubChannels() {
+  try {
+    const r  = await fetch('/api/admin/forcesub_channels', { headers });
+    const ch = await r.json();
+    if (ch.error) { document.getElementById('forcesubList').textContent = 'Owner only'; return; }
+    if (!ch.length) { document.getElementById('forcesubList').textContent = 'Koi channel nahi hai.'; return; }
+    document.getElementById('forcesubList').innerHTML = ch.map(c => `
+      <div class="forcesub-item">
+        <div>
+          <div style="font-size:13px;font-weight:600">${c.title||c.channel_id}</div>
+          <div style="font-size:11px;color:var(--muted)">${c.channel_id}</div>
+        </div>
+        <span class="badge">Active</span>
+      </div>
+    `).join('');
+  } catch(e) { document.getElementById('forcesubList').textContent = 'Load failed.'; }
+}
+
+function showToast(msg, d=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), d);
+}
+
+loadStats();
+loadForceSubChannels();
+</script>
+</body>
+  </html>
