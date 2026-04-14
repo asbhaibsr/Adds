@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Viral Boost Dashboard</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: rgba(255,255,255,0.08);
+    --accent: #ff6b35;
+    --accent2: #f7c59f;
+    --gold: #ffd700;
+    --green: #00e676;
+    --red: #ff5252;
+    --text: #f0f0f0;
+    --muted: #888;
+    --radius: 16px;
+    --tab-h: 64px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: calc(var(--tab-h) + 16px);
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 20px 16px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(255,107,53,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-top { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #e040fb);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+  .user-name { font-size: 17px; font-weight: 700; }
+  .user-sub  { font-size: 12px; color: var(--accent2); margin-top: 2px; }
+
+  /* Reach counter */
+  .reach-banner {
+    margin-top: 16px;
+    background: rgba(255,107,53,0.12);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .reach-num { font-size: 26px; font-weight: 800; color: var(--accent); }
+  .reach-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .reach-badge {
+    background: var(--accent); color: white;
+    font-size: 10px; font-weight: 700;
+    padding: 4px 8px; border-radius: 20px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.65} }
+
+  /* ── Tabs ── */
+  .tabs {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: var(--tab-h);
+    background: rgba(18,18,18,0.96);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+  }
+  .tab {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px; cursor: pointer;
+    font-size: 10px; color: var(--muted);
+    transition: color .2s;
+    -webkit-user-select: none; user-select: none;
+  }
+  .tab .icon { font-size: 22px; line-height: 1; }
+  .tab.active { color: var(--accent); }
+  .tab.active .icon { transform: scale(1.15); }
+
+  /* ── Pages ── */
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 12px;
+  }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+
+  /* ── Streak ── */
+  .streak-circle {
+    width: 120px; height: 120px; margin: 0 auto 16px;
+    border-radius: 50%;
+    background: conic-gradient(var(--accent) calc(var(--pct,0) * 1%), var(--surface2) 0%);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .streak-inner {
+    width: 90px; height: 90px; border-radius: 50%;
+    background: var(--surface);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+  }
+  .streak-num { font-size: 32px; font-weight: 900; color: var(--accent); line-height: 1; }
+  .streak-days { font-size: 11px; color: var(--muted); }
+  .day-dots { display: flex; gap: 6px; justify-content: center; margin: 12px 0; }
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    transition: all .3s;
+  }
+  .dot.done { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .dot.today { background: var(--gold); border-color: var(--gold); }
+
+  /* ── Buttons ── */
+  .btn {
+    width: 100%; padding: 15px;
+    border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #e040fb); color: white; }
+  .btn-primary:active { transform: scale(.97); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-danger { background: rgba(255,82,82,.15); color: var(--red); border: 1px solid rgba(255,82,82,.3); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; }
+
+  /* ── Referral ── */
+  .ref-link-box {
+    background: var(--surface2); border-radius: 10px;
+    padding: 12px 14px; font-size: 13px; color: var(--accent2);
+    word-break: break-all; margin-bottom: 12px;
+    border: 1px dashed rgba(255,107,53,.4);
+  }
+  .ref-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat-box { background: var(--surface2); border-radius: 10px; padding: 14px; text-align: center; }
+  .stat-num { font-size: 24px; font-weight: 800; color: var(--gold); }
+  .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* Progress bar */
+  .progress-wrap { margin: 8px 0; }
+  .progress-bar {
+    height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--gold));
+    border-radius: 3px; transition: width .5s ease;
+  }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Search ── */
+  .search-bar {
+    display: flex; gap: 8px; margin-bottom: 12px;
+  }
+  .search-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+    color: var(--text); font-size: 15px; outline: none;
+    transition: border-color .2s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-btn {
+    background: var(--accent); border: none; border-radius: 10px;
+    padding: 0 16px; color: white; font-size: 20px; cursor: pointer;
+  }
+  .result-card {
+    background: var(--surface2); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 8px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    text-decoration: none; color: var(--text);
+  }
+  .result-title { font-size: 14px; font-weight: 600; }
+  .result-tags  { font-size: 11px; color: var(--accent); margin-top: 3px; }
+
+  /* ── My Ads ── */
+  .ad-card {
+    background: var(--surface2); border-radius: 10px;
+    padding: 14px; margin-bottom: 10px;
+    border-left: 3px solid var(--border);
+    position: relative;
+  }
+  .ad-card.approved { border-left-color: var(--green); }
+  .ad-card.pending  { border-left-color: var(--gold); }
+  .ad-card.rejected { border-left-color: var(--red); }
+  .ad-status {
+    font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+    display: inline-block; margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .status-approved { background: rgba(0,230,118,.15); color: var(--green); }
+  .status-pending  { background: rgba(255,215,0,.15); color: var(--gold); }
+  .status-rejected { background: rgba(255,82,82,.15); color: var(--red); }
+  .ad-caption { font-size: 13px; line-height: 1.4; margin-bottom: 8px; }
+  .ad-meta { font-size: 11px; color: var(--muted); display: flex; gap: 12px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+    background: #333; color: white; padding: 10px 20px; border-radius: 20px;
+    font-size: 14px; z-index: 999; transition: transform .3s;
+    pointer-events: none; max-width: 80%; text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── Loading ── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface2) 25%, var(--surface) 50%, var(--surface2) 75%);
+    background-size: 200% 100%; animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="avatar" id="avatarLetter">?</div>
+    <div>
+      <div class="user-name" id="userName">Loading...</div>
+      <div class="user-sub" id="userSub">Streak: 0 🔥</div>
+    </div>
+  </div>
+  <div class="reach-banner">
+    <div>
+      <div class="reach-num" id="reachNum">50,000+</div>
+      <div class="reach-label">Total Live Reach</div>
+    </div>
+    <div class="reach-badge">🔴 LIVE</div>
+  </div>
+</div>
+
+<!-- PAGES -->
+
+<!-- STREAK PAGE -->
+<div class="page active" id="page-streak">
+  <div class="card">
+    <div class="card-title">🔥 Daily Streak</div>
+    <div class="streak-circle" id="streakCircle" style="--pct:0">
+      <div class="streak-inner">
+        <div class="streak-num" id="streakNum">0</div>
+        <div class="streak-days">days</div>
+      </div>
+    </div>
+    <div class="day-dots" id="dayDots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+    <div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:14px" id="streakMsg">
+      Aaj check-in karo aur streak badhao!
+    </div>
+    <button class="btn btn-primary" id="checkinBtn" onclick="doCheckin()">
+      ✅ Aaj Ka Check-in Karo
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📢 Apna Ad Banao</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px">
+      Bot ke saath ad banao → hum 50k+ log tak pahunchate hain!
+    </div>
+    <button class="btn btn-secondary" onclick="openCreateAd()">
+      🎨 New Ad Create Karo
+    </button>
+  </div>
+</div>
+
+<!-- REFERRAL PAGE -->
+<div class="page" id="page-refer">
+  <div class="card">
+    <div class="card-title">👥 Referral Program</div>
+    <div class="ref-stats">
+      <div class="stat-box">
+        <div class="stat-num" id="refCount">0</div>
+        <div class="stat-lbl">Friends Referred</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="freeAds">0</div>
+        <div class="stat-lbl">Free Ads Earned</div>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Next Free Ad Progress</div>
+      <div class="progress-bar"><div class="progress-fill" id="refProgress" style="width:0%"></div></div>
+      <div class="progress-label">
+        <span id="refProgressLabel">0 / 10 refers</span>
+        <span>🎁 1 Free Ad</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔗 Tumhara Referral Link</div>
+    <div class="ref-link-box" id="refLink">Loading...</div>
+    <button class="btn btn-primary" onclick="copyRefLink()" style="margin-bottom:8px">
+      📋 Link Copy Karo
+    </button>
+    <button class="btn btn-secondary" onclick="shareRefLink()">
+      📤 Dosto Ko Share Karo
+    </button>
+  </div>
+
+  <div class="card">
+    <div style="font-size:13px;color:var(--muted)">
+      💡 <strong style="color:var(--text)">Kaise kaam karta hai?</strong><br><br>
+      1. Apna link dosto ko share karo<br>
+      2. Jab dost bot start kare → referral count ho<br>
+      3. <strong style="color:var(--gold)">10 refers = 1 Free Ad</strong> 🎁
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH PAGE -->
+<div class="page" id="page-search">
+  <div class="search-bar">
+    <input type="text" class="search-input" id="searchInput" placeholder="Search karo... (kalki, tech, deals)" onkeydown="if(event.key==='Enter')doSearch()"/>
+    <button class="search-btn" onclick="doSearch()">🔍</button>
+  </div>
+  <div id="searchResults">
+    <div class="empty-state">
+      <div class="icon">🔎</div>
+      <div>Koi bhi keyword search karo</div>
+    </div>
+  </div>
+</div>
+
+<!-- MY ADS PAGE -->
+<div class="page" id="page-myads">
+  <button class="btn btn-primary" onclick="openCreateAd()" style="margin-bottom:14px">
+    ➕ Naya Ad Banao
+  </button>
+  <div id="myAdsList">
+    <div class="skeleton" style="height:90px;margin-bottom:10px"></div>
+    <div class="skeleton" style="height:90px;margin-bottom:10px"></div>
+  </div>
+</div>
+
+<!-- BOTTOM TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('streak',this)">
+    <span class="icon">🔥</span>Streak
+  </div>
+  <div class="tab" onclick="switchTab('refer',this)">
+    <span class="icon">👥</span>Referral
+  </div>
+  <div class="tab" onclick="switchTab('search',this)">
+    <span class="icon">🔍</span>Search
+  </div>
+  <div class="tab" onclick="switchTab('myads',this)">
+    <span class="icon">📢</span>My Ads
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+const initData = tg?.initData || '';
+const headers  = { 'Content-Type':'application/json', 'X-Telegram-Init-Data': initData };
+
+let userData = null;
+
+// ─── Init ──────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const r    = await fetch('/api/userinfo', { headers });
+    userData   = await r.json();
+    if (userData.error) return;
+
+    document.getElementById('userName').textContent    = userData.full_name || 'User';
+    document.getElementById('userSub').textContent     = `Streak: ${userData.streak} 🔥 | Reach: ${fmt(userData.reach)}`;
+    document.getElementById('avatarLetter').textContent = (userData.full_name||'U')[0].toUpperCase();
+    document.getElementById('reachNum').textContent    = fmt(userData.reach) + '+';
+    document.getElementById('streakNum').textContent   = userData.streak;
+    document.getElementById('refCount').textContent    = userData.referral_count;
+    document.getElementById('freeAds').textContent     = userData.free_ads;
+    document.getElementById('refLink').textContent     = userData.referral_link;
+
+    // Streak circle (out of 7)
+    const pct = Math.min((userData.streak / 7) * 100, 100);
+    document.getElementById('streakCircle').style.setProperty('--pct', pct);
+
+    // Day dots
+    const dots = document.querySelectorAll('#dayDots .dot');
+    dots.forEach((d,i) => {
+      if (i < userData.streak - 1) d.classList.add('done');
+      if (i === userData.streak - 1 && userData.streak > 0) d.classList.add('today');
+    });
+
+    // Referral progress
+    const prog = (userData.referral_count % 10) / 10 * 100;
+    document.getElementById('refProgress').style.width = prog + '%';
+    document.getElementById('refProgressLabel').textContent = `${userData.referral_count % 10} / 10 refers`;
+
+    // Streak msg
+    if (userData.streak >= 7) {
+      document.getElementById('streakMsg').textContent = '🏆 7-Day Streak Complete! Kya baat hai!';
+    } else if (userData.streak > 0) {
+      document.getElementById('streakMsg').textContent = `${7 - userData.streak} din aur → 7-Day Streak! 💪`;
+    }
+
+    loadMyAds();
+  } catch(e) { console.error(e); }
+}
+
+function fmt(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'L';
+  if (n >= 1e3) return (n/1e3).toFixed(0) + 'k';
+  return n;
+}
+
+// ─── Check-in ──────────────────────────────────────────────────────
+async function doCheckin() {
+  const btn = document.getElementById('checkinBtn');
+  btn.disabled = true;
+  try {
+    const r   = await fetch('/api/checkin', { method:'POST', headers, body:'{}'});
+    const res = await r.json();
+    showToast(res.message);
+    if (res.success) {
+      document.getElementById('streakNum').textContent = res.streak;
+      const pct = Math.min((res.streak / 7) * 100, 100);
+      document.getElementById('streakCircle').style.setProperty('--pct', pct);
+      const dots = document.querySelectorAll('#dayDots .dot');
+      if (res.streak > 0 && res.streak <= 7) {
+        dots[res.streak - 1].classList.remove('done');
+        dots[res.streak - 1].classList.add('today');
+      }
+      tg?.HapticFeedback?.notificationOccurred('success');
+    } else {
+      setTimeout(() => btn.disabled = false, 2000);
+    }
+  } catch(e) {
+    showToast('❌ Error aaya, dobara try karo');
+    btn.disabled = false;
+  }
+}
+
+// ─── Referral ──────────────────────────────────────────────────────
+function copyRefLink() {
+  const link = document.getElementById('refLink').textContent;
+  navigator.clipboard?.writeText(link).then(() => showToast('✅ Link copy ho gaya!'));
+  tg?.HapticFeedback?.selectionChanged();
+}
+function shareRefLink() {
+  const link = document.getElementById('refLink').textContent;
+  tg?.openTelegramLink?.(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('🚀 Mujhse join karo aur FREE promotion pao!')}`);
+}
+
+// ─── Search ───────────────────────────────────────────────────────
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  document.getElementById('searchResults').innerHTML = '<div class="skeleton" style="height:60px;margin-bottom:8px"></div>'.repeat(3);
+  try {
+    const r   = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+    const res = await r.json();
+    if (!res.length) {
+      document.getElementById('searchResults').innerHTML = `<div class="empty-state"><div class="icon">😕</div><div>'${q}' ke liye koi post nahi mila</div></div>`;
+      return;
+    }
+    document.getElementById('searchResults').innerHTML = res.map(ad => `
+      <a class="result-card" href="${ad.link}" target="_blank">
+        <div>
+          <div class="result-title">${esc(ad.caption)}</div>
+          <div class="result-tags">${ad.tags.map(t=>'#'+t).join(' ')}</div>
+        </div>
+        <span style="font-size:20px">→</span>
+      </a>
+    `).join('');
+  } catch(e) {
+    document.getElementById('searchResults').innerHTML = '<div class="empty-state"><div>Error aaya, dobara try karo</div></div>';
+  }
+}
+
+// ─── My Ads ───────────────────────────────────────────────────────
+async function loadMyAds() {
+  try {
+    const r   = await fetch('/api/my_ads', { headers });
+    const ads = await r.json();
+    if (!ads.length) {
+      document.getElementById('myAdsList').innerHTML = '<div class="empty-state"><div class="icon">📭</div><div>Abhi koi ad nahi hai.<br>Pehla ad banao!</div></div>';
+      return;
+    }
+    document.getElementById('myAdsList').innerHTML = ads.map(ad => `
+      <div class="ad-card ${ad.status}" id="adcard-${ad.id}">
+        <span class="ad-status status-${ad.status}">${statusLabel(ad.status)}</span>
+        <div class="ad-caption">${esc(ad.caption)}</div>
+        <div class="ad-meta">
+          <span>👁️ ${fmt(ad.reach)} reach</span>
+          <span>🏷️ ${ad.hashtags.map(t=>'#'+t).join(' ')}</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          ${ad.link ? `<a href="${ad.link}" target="_blank" class="btn btn-secondary" style="flex:1;font-size:12px;padding:8px">📌 Post Dekho</a>` : ''}
+          <button class="btn btn-danger" style="flex:1;font-size:12px;padding:8px" onclick="deleteAd('${ad.id}')">🗑️ Delete</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { console.error(e); }
+}
+
+function statusLabel(s) {
+  return {approved:'✅ Approved',pending:'⏳ Pending',rejected:'❌ Rejected',deleted:'🗑️ Deleted'}[s] || s;
+}
+
+async function deleteAd(adId) {
+  if (!confirm('Yeh ad delete karna chahte ho?')) return;
+  try {
+    const r   = await fetch('/api/delete_ad', { method:'POST', headers, body: JSON.stringify({ad_id:adId}) });
+    const res = await r.json();
+    if (res.success) {
+      document.getElementById(`adcard-${adId}`)?.remove();
+      showToast('✅ Ad delete ho gaya!');
+    }
+  } catch(e) { showToast('❌ Error aaya'); }
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  el.classList.add('active');
+  tg?.HapticFeedback?.selectionChanged();
+}
+
+// ─── Create Ad ────────────────────────────────────────────────────
+function openCreateAd() {
+  tg?.openTelegramLink?.(`https://t.me/${window.__botUsername || 'bot'}?start=create_ad`);
+}
+
+// ─── Utils ────────────────────────────────────────────────────────
+function showToast(msg, duration=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+function esc(s='') {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Boot
+init();
+</script>
+</body>
+</html>
