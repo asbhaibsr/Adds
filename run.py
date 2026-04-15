@@ -15,11 +15,14 @@ log = logging.getLogger("runner")
 
 
 def start_flask():
-    """Run Flask in a daemon thread."""
-    from app import app
-    port = int(os.getenv("PORT", os.getenv("FLASK_PORT", 8080)))
-    log.info(f"Flask starting on port {port}")
-    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+    """Run Flask - NON-daemon so it stays alive even if bot crashes."""
+    try:
+        from app import app
+        port = int(os.getenv("PORT", os.getenv("FLASK_PORT", 8080)))
+        log.info(f"Flask starting on port {port}")
+        app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+    except Exception as e:
+        log.error(f"Flask crashed: {e}")
 
 
 async def start_bot():
@@ -29,8 +32,8 @@ async def start_bot():
 
 
 if __name__ == "__main__":
-    # Flask → background thread
-    flask_thread = threading.Thread(target=start_flask, daemon=True)
+    # Flask → NON-daemon thread (stays alive independently)
+    flask_thread = threading.Thread(target=start_flask, daemon=False)
     flask_thread.start()
     log.info("Flask thread started.")
 
@@ -39,3 +42,7 @@ if __name__ == "__main__":
         asyncio.run(start_bot())
     except KeyboardInterrupt:
         log.info("Bot stopped by user.")
+    except Exception as e:
+        log.error(f"Bot crashed: {e}")
+        # Flask thread still running → health check stays alive
+        flask_thread.join()
