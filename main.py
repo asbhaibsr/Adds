@@ -55,21 +55,29 @@ def kb_main_menu() -> InlineKeyboardMarkup:
 
 
 async def force_sub_gate(client: Client, user_id: int) -> bool:
-    passed, missing = await check_subscription(client, user_id)
+    try:
+        passed, missing = await check_subscription(client, user_id)
+    except Exception as e:
+        log.warning(f"force_sub_gate error for {user_id}: {e}")
+        return True  # on error, let user through
+
     if not passed:
-        kb = build_join_buttons(missing)
-        await client.send_message(
-            user_id,
-            "⛔ **Ruko! Pehle Yeh Channels Join Karo**\n"
-            "*(Wait! First join these channels)*\n\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "🔒 Is bot ko use karne ke liye neeche diye gaye channels join karna zaroori hai.\n"
-            "*(Joining the channels below is required to use this bot.)*\n\n"
-            "✅ Har channel join karo\n"
-            "✅ Phir '🔄 Maine Join Kar Liya' button dabao\n\n"
-            "*(Join each channel, then press the check button below)*",
-            reply_markup=kb
-        )
+        try:
+            kb = build_join_buttons(missing)
+            await client.send_message(
+                user_id,
+                "⛔ **Ruko! Pehle Yeh Channels Join Karo**\n"
+                "*(Wait! First join these channels)*\n\n"
+                "━━━━━━━━━━━━━━━━━━━━━━\n"
+                "🔒 Is bot ko use karne ke liye neeche diye gaye channels join karna zaroori hai.\n"
+                "*(Joining the channels below is required to use this bot.)*\n\n"
+                "✅ Har channel join karo\n"
+                "✅ Phir '🔄 Maine Join Kar Liya' button dabao\n\n"
+                "*(Join each channel, then press the check button below)*",
+                reply_markup=kb
+            )
+        except Exception as e:
+            log.error(f"Could not send force_sub message to {user_id}: {e}")
     return passed
 
 
