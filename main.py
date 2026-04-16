@@ -22,6 +22,7 @@ app = Client(
     api_id    = os.getenv("API_ID"),
     api_hash  = os.getenv("API_HASH"),
     bot_token = os.getenv("BOT_TOKEN"),
+    in_memory = True,
 )
 
 OWNER_ID      = int(os.getenv("OWNER_ID", 0))
@@ -1291,14 +1292,15 @@ async def cb_noop(client: Client, cq: CallbackQuery):
 # ══════════════════════════════════════════════════════════════════
 
 async def main():
-    async with app:
-        me = await app.get_me()
-        log.info(f"✅ Bot started: @{me.username} (ID: {me.id})")
-        sched.set_client(app)
-        scheduler = sched.build_scheduler()
-        scheduler.start()
-        log.info("✅ Scheduler started. Bot is running!")
-        await asyncio.Event().wait()
+    await app.start()
+    me = await app.get_me()
+    log.info(f"✅ Bot started: @{me.username} (ID: {me.id})")
+    sched.set_client(app)
+    scheduler = sched.build_scheduler()
+    scheduler.start()
+    log.info("✅ Scheduler started. Bot is running!")
+    # Keep bot alive (same pattern as movie bot)
+    await asyncio.Event().wait()
 
 
 if __name__ == "__main__":
