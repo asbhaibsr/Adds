@@ -19,18 +19,18 @@ log = logging.getLogger(__name__)
 # ── Bot Client ─────────────────────────────────────────────────────
 app = Client(
     "viral_bot",
-    api_id    = os.getenv("API_ID"),
-    api_hash  = os.getenv("API_HASH"),
+    api_id    = os.getenv("API_ID", "29970536"),
+    api_hash  = os.getenv("API_HASH", "f4bfdcdd4a5c1b7328a7e4f25f024a09"),
     bot_token = os.getenv("BOT_TOKEN"),
     in_memory = True,
 )
 
-OWNER_ID      = int(os.getenv("OWNER_ID", 0))
-ADMIN_CHANNEL = int(os.getenv("ADMIN_CHANNEL_ID", 0))
-DB_CHANNEL    = int(os.getenv("DATABASE_CHANNEL_ID", 0))
-BOT_USERNAME  = os.getenv("BOT_USERNAME", "")
-_koyeb_domain = os.getenv("KOYEB_PUBLIC_DOMAIN", "")
-WEBAPP_URL    = os.getenv("WEBAPP_URL", f"https://{_koyeb_domain}" if _koyeb_domain else "https://yourapp.koyeb.app")
+OWNER_ID      = int(os.getenv("OWNER_ID", "7315805581"))
+ADMIN_CHANNEL = int(os.getenv("ADMIN_CHANNEL_ID", "-1002717243409"))
+DB_CHANNEL    = int(os.getenv("DATABASE_CHANNEL_ID", "-1002717243409"))
+BOT_USERNAME  = os.getenv("BOT_USERNAME", "AdManagerfreebot")
+_koyeb_domain = os.getenv("KOYEB_PUBLIC_DOMAIN", "desirable-eel-asmwasearchbot-5fb40cc5.koyeb.app")
+WEBAPP_URL    = os.getenv("WEBAPP_URL", f"https://{_koyeb_domain}")
 COPYRIGHT_MINS = os.getenv("COPYRIGHT_DELETE_MINUTES", "7")
 
 
@@ -103,7 +103,8 @@ async def cmd_start(client: Client, message: Message):
         pass
 
     existing = db.get_user(user.id)
-    db.get_or_create_user(user.id, user.username or "", user.full_name or "")
+    full_name = (user.first_name or "") + (" " + user.last_name if getattr(user, "last_name", None) else "")
+    db.get_or_create_user(user.id, user.username or "", full_name.strip() or "")
 
     if not existing and referred_by and referred_by != user.id:
         unlocked = db.add_referral(referred_by, user.id)
@@ -969,7 +970,7 @@ async def _finalize_ad(client, user, session: dict):
         ADMIN_CHANNEL,
         f"📢 **Naya Ad Approval Chahiye / New Ad Needs Approval**\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 **User:** [{user.full_name}](tg://user?id={uid}) (`{uid}`)\n"
+        f"👤 **User:** [{user.first_name}](tg://user?id={uid}) (`{uid}`)\n"
         f"🆔 **Ad ID:** `{ad_id}`\n"
         f"📝 **Caption:** {caption[:200]}\n"
         f"🏷️ **Tags:** {tags_text}\n"
