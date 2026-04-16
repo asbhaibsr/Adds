@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from pyrogram import Client, filters
 from pyrogram.types import (
     Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton,
-    InlineQuery, InlineQueryResultArticle, InputTextMessageContent,
+    InlineQuery, InlineQueryResultArticle, InputTextMessageContent, WebAppInfo,
 )
 
 import scheduler as sched
@@ -42,13 +42,13 @@ def is_owner(uid: int) -> bool:
 
 def kb_dashboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([[
-        InlineKeyboardButton("🚀 Dashboard Kholo / Open Dashboard", web_app={"url": WEBAPP_URL})
+        InlineKeyboardButton("🚀 Dashboard Kholo / Open Dashboard", web_app=WebAppInfo(url=WEBAPP_URL))
     ]])
 
 
 def kb_main_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("🚀 Dashboard Kholo", web_app={"url": WEBAPP_URL})],
+        [InlineKeyboardButton("🚀 Dashboard Kholo", web_app=WebAppInfo(url=WEBAPP_URL))],
         [InlineKeyboardButton("📢 Ad Banao / Create Ad", callback_data="start_create_ad")],
         [InlineKeyboardButton("👥 Refer Karo / Referral Link", callback_data="show_referral")],
         [InlineKeyboardButton("❓ Help & Commands", callback_data="show_help")],
@@ -122,7 +122,7 @@ async def cmd_start(client: Client, message: Message):
                     "*(Now create your ad and reach 50,000+ users!)*",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton("📢 Abhi Ad Banao!", callback_data="start_create_ad")],
-                        [InlineKeyboardButton("🚀 Dashboard Dekho", web_app={"url": WEBAPP_URL})],
+                        [InlineKeyboardButton("🚀 Dashboard Dekho", web_app=WebAppInfo(url=WEBAPP_URL))],
                     ])
                 )
             except Exception:
@@ -245,7 +245,7 @@ async def cb_show_referral(client: Client, cq: CallbackQuery):
         "    *(Every 10 refers = 1 Free Ad Slot)*",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("📤 Dosto Ko Share Karo", url=f"https://t.me/share/url?url={ref_link}&text=🚀+Yeh+bot+se+FREE+promotion+milta+hai!")],
-            [InlineKeyboardButton("🚀 Dashboard Dekho", web_app={"url": WEBAPP_URL})],
+            [InlineKeyboardButton("🚀 Dashboard Dekho", web_app=WebAppInfo(url=WEBAPP_URL))],
             [InlineKeyboardButton("🔙 Wapas / Back", callback_data="back_to_menu")],
         ])
     )
@@ -1005,7 +1005,7 @@ async def _finalize_ad(client, user, session: dict):
         "📊 Dashboard mein status track karo!\n"
         "*(Track status in your dashboard!)*",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🚀 Dashboard Dekho / View Dashboard", web_app={"url": WEBAPP_URL})],
+            [InlineKeyboardButton("🚀 Dashboard Dekho / View Dashboard", web_app=WebAppInfo(url=WEBAPP_URL))],
             [InlineKeyboardButton("📢 Aur Ad Banao / Create More Ads", callback_data="start_create_ad")],
         ])
     )
@@ -1043,7 +1043,7 @@ async def cb_approve(client: Client, cq: CallbackQuery):
                 "📊 Dashboard mein live reach track karo!\n"
                 "*(Track live reach in your dashboard!)*",
                 reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("📊 Reach Track Karo", web_app={"url": WEBAPP_URL})
+                    InlineKeyboardButton("📊 Reach Track Karo", web_app=WebAppInfo(url=WEBAPP_URL))
                 ]])
             )
         except Exception:
