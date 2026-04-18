@@ -11,6 +11,12 @@ services:
     routes:
       - path: /
         port: 8080
+      - path: /api
+        port: 8080
+      - path: /admin_panel
+        port: 8080
+      - path: /health
+        port: 8080
     health-checks:
       - type: http
         port: 8080
@@ -33,7 +39,11 @@ services:
       - name: FLASK_SECRET_KEY
         value: "viralbot-super-secret-key-2025"
       - name: POST_INTERVAL_MINUTES
-        value: "10"
+        value: "30"
+      - name: BROADCAST_ROUNDS
+        value: "2"
+      - name: ROUND2_AFTER_HOURS
+        value: "24"
       - name: MEGA_BROADCAST_TIMES
         value: "09:00,21:00"
       - name: FLOOD_WAIT_SLEEP_MIN
@@ -42,7 +52,9 @@ services:
         value: "20"
       - name: COPYRIGHT_DELETE_MINUTES
         value: "7"
-      # ── In Koyeb dashboard SET THESE as Secret env vars ──
-      # BOT_TOKEN       = your bot token from BotFather
-      # BOT_USERNAME    = your bot username (without @)
-      # MONGO_URI       = your MongoDB Atlas connection string
+      - name: DEV_MODE
+        value: "false"
+      # ── Koyeb dashboard mein Secret env vars SET karo ──
+      # BOT_TOKEN    = BotFather se bot token
+      # BOT_USERNAME = bot username (without @)
+      # MONGO_URI    = MongoDB Atlas connection string
