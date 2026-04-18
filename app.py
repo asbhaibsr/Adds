@@ -83,15 +83,26 @@ def verify_telegram_webapp(init_data: str) -> dict | None:
         return None
 
 
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "")  # .env mein set karo
+
 def _get_tg_user_from_request() -> dict | None:
     """
     Request se Telegram user nikalo.
-    DEV_MODE mein bina auth ke owner ka user return karo.
+    3 tarike se auth hota hai:
+    1. Telegram WebApp initData
+    2. X-Admin-Secret header (browser se direct access)
+    3. DEV_MODE (testing ke liye)
     """
     # DEV_MODE — testing ke liye auth skip
     if DEV_MODE:
         return {"id": OWNER_ID, "first_name": "Dev", "username": "dev"}
 
+    # Browser se admin secret ke saath access
+    admin_secret = request.headers.get("X-Admin-Secret", "")
+    if admin_secret and ADMIN_SECRET and admin_secret == ADMIN_SECRET:
+        return {"id": OWNER_ID, "first_name": "Admin", "username": "admin"}
+
+    # Telegram WebApp initData
     init_data = (
         request.headers.get("X-Telegram-Init-Data", "")
         or request.args.get("initData", "")
