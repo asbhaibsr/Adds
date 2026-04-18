@@ -1004,7 +1004,7 @@ async def _finalize_ad(client, user, session: dict):
         )
 
     # 2. Save ad to MongoDB
-    ad_id = db.create_ad(uid, {session, "db_channel_msg_id": db_msg.id})
+    ad_id = db.create_ad(uid, {**session, "db_channel_msg_id": db_msg.id})
 
     # 3. Send to admin channel for approval
     await client.send_message(
