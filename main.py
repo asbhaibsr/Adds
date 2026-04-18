@@ -1467,9 +1467,8 @@ async def _send_mypost_page(client, uid, ads, idx, message_or_cq, edit=False):
 
     action_row = [InlineKeyboardButton("🗑️ Delete", callback_data=f"mypost_del_{ad_id}_{idx}")]
     if ad.get("db_channel_msg_id"):
-        ch_str = str(DB_CHANNEL).replace("-100", "")
-        url    = f"https://t.me/c/{ch_str}/{ad['db_channel_msg_id']}"
-        action_row.insert(0, InlineKeyboardButton("📌 Post Dekho", url=url))
+        # Channel URL nahi — bot PM mein post copy karke bhejta hai
+        action_row.insert(0, InlineKeyboardButton("📌 Post Dekho (PM mein)", callback_data=f"view_mypost_{ad_id}"))
 
     kb_rows = []
     if nav_row:    kb_rows.append(nav_row)
@@ -1575,19 +1574,59 @@ async def cb_show_admin_stats(client: Client, cq: CallbackQuery):
 # ══════════════════════════════════════════════════════════════════
 
 async def main():
+    global BOT_USERNAME
     await app.start()
     me = await app.get_me()
-    log.info(f"✅ Bot started: @{me.username} (ID: {me.id})")
+
+    # BOT_USERNAME dynamically set — .env pe depend nahi
+    BOT_USERNAME = me.username or BOT_USERNAME
+    os.environ["BOT_USERNAME"] = BOT_USERNAME
+    log.info(f"Bot started: @{BOT_USERNAME} (ID: {me.id})")
+
+    # DB Channel check — redeploy ke baad bhi sahi rahe
+    try:
+        await app.get_chat(DB_CHANNEL)
+        log.info(f"DB Channel OK: {DB_CHANNEL}")
+    except Exception as db_err:
+        log.warning(f"DB Channel issue: {db_err}")
+
     sched.set_client(app)
     scheduler = sched.build_scheduler()
     scheduler.start()
-    log.info("✅ Scheduler started. Bot is running!")
-    # Keep bot alive (same pattern as movie bot)
+    log.info("Scheduler started. Bot is running!")
     await asyncio.Event().wait()
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+# ── View My Post in PM — channel URL nahi, bot copy karke bhejta hai ──
+
+@app.on_callback_query(filters.regex(r"^view_mypost_(.+)$"))
+async def cb_view_mypost(client: Client, cq: CallbackQuery):
+    ad_id = cq.matches[0].group(1)
+    uid   = cq.from_user.id
+    ad    = db.get_ad(ad_id)
+
+    if not ad or ad.get("owner_id") != uid:
+        return await cq.answer("Ad nahi mila!", show_alert=True)
+
+    await cq.answer("Post bhej raha hoon...")
+
+    from utils.broadcaster import send_ad_to_user, _build_keyboard
+    try:
+        await send_ad_to_user(client, uid, ad)
+        status_str = ad.get("status", "?").upper()
+        reach_str  = ad.get("reach", 0)
+        likes_str  = ad.get("likes", 0)
+        await client.send_message(
+            uid,
+            f"Yeh tha tumhara ad!\n\nStatus: {status_str}\nReach: {reach_str} users\nLikes: {likes_str}"
+        )
+    except Exception as e:
+        await client.send_message(uid, f"Post bhejne mein error: {e}")
+
 
 # ══════════════════════════════════════════════════════════════════
 #  BROWSE POSTS — next/back + like/unlike + owner notification
