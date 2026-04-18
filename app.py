@@ -1,3 +1,9 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║          AdManager Bot — by @asbhaibsr                          ║
+# ║  Unauthorized use, resale or redistribution is prohibited.      ║
+# ║  GitHub: https://github.com/asbhaibsr/Adds                      ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
 import os
 import hashlib
 import hmac
