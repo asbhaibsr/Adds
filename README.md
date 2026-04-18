@@ -1,188 +1,221 @@
-# 🚀 Viral Streak Bot — Complete Setup Guide
+<div align="center">
 
-## Project Structure
-```
-viral_streak_bot/
-├── main.py          # Pyrogram bot (all handlers)
-├── app.py           # Flask Mini App server
-├── database.py      # MongoDB CRUD operations
-├── scheduler.py     # Background tasks (queue, broadcast, flood-wait)
-├── run.py           # Launch both Flask + Bot together
-├── requirements.txt
-├── .env.example     # Copy to .env and fill values
-├── utils/
-│   ├── broadcaster.py   # Send ad to user
-│   └── forcesub.py      # Force-sub channel checker
-└── templates/
-    ├── index.html       # Mini App (User Dashboard)
-    └── admin.html       # Mini App (Admin Panel)
-```
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=180&section=header&text=AdManager%20Bot&fontSize=42&fontColor=fff&animation=twinkling&fontAlignY=32&desc=50%2C000%2B%20Users%20Tak%20Pahuncho%20%E2%80%94%20Bilkul%20FREE!&descAlignY=55&descSize=18" width="100%"/>
+
+[![Telegram Bot](https://img.shields.io/badge/Telegram-Bot-blue?style=for-the-badge&logo=telegram)](https://t.me/AdManagerfreebot)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Pyrogram](https://img.shields.io/badge/Pyrogram-2.0-blue?style=for-the-badge)](https://pyrogram.org)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://mongodb.com)
+[![License](https://img.shields.io/badge/License-MIT%20%2B%20Attribution-orange?style=for-the-badge)](LICENSE)
+[![Author](https://img.shields.io/badge/Author-%40asbhaibsr-red?style=for-the-badge&logo=telegram)](https://t.me/asbhaibsr)
+
+<br/>
+
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=500&color=FF6B35&center=true&vCenter=true&multiline=true&width=600&height=100&lines=Telegram+Ad+Broadcasting+Bot;50%2C000%2B+Users+Reach+—+FREE!;Made+with+%E2%9D%A4%EF%B8%8F+by+%40asbhaibsr" alt="Typing SVG" />
+
+</div>
 
 ---
 
-## ⚙️ Setup Steps
+<div align="center">
 
-### 1. Install Dependencies
+## ✨ Features
+
+</div>
+
+<table>
+<tr>
+<td width="50%">
+
+### 📢 Ad Broadcasting
+- **50,000+** active users tak pahuncho
+- **2-Round System**: Aaj + Agle din
+- Naye users bhi Round 2 mein cover hote hain
+- Auto-queue with flood protection
+
+</td>
+<td width="50%">
+
+### 🎯 Smart Earning System
+- **Daily Streak**: 7 din = 1 Free Ad
+- **Referral System**: 10 refers = 1 Free Ad
+- Like / Unlike posts
+- Browse posts with navigation
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🛡️ Admin Controls
+- Approve / Reject / Copyright flag
+- Force-Subscribe channels
+- Manual broadcast trigger
+- Auto-delete copyright posts
+
+</td>
+<td width="50%">
+
+### 📊 Mini App Dashboard
+- Live reach counter
+- Streak tracker with animation
+- Referral stats & link
+- My Ads management
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🚀 Deploy Karo
+
+### Step 1 — Prerequisites
+```
+Python 3.11+
+MongoDB Atlas (free tier)
+Telegram Bot Token (@BotFather se)
+Telegram API ID & Hash (my.telegram.org se)
+Koyeb account (free tier)
+```
+
+### Step 2 — Environment Variables
+
+`.env` file:
+```env
+API_ID=29970536
+API_HASH=your_api_hash
+BOT_TOKEN=your_bot_token
+BOT_USERNAME=YourBotUsername
+OWNER_ID=your_telegram_id
+MONGO_URI=mongodb+srv://...
+
+DATABASE_CHANNEL_ID=-100xxxxxxxxxx
+ADMIN_CHANNEL_ID=-100xxxxxxxxxx
+
+APP_URL=https://your-app.koyeb.app
+WEBAPP_URL=https://your-app.koyeb.app
+
+POST_INTERVAL_MINUTES=30
+ROUND2_AFTER_HOURS=24
+COPYRIGHT_DELETE_MINUTES=7
+ADMIN_SECRET=your_dashboard_password
+MEGA_BROADCAST_TIMES=09:00,21:00
+```
+
+### Step 3 — Koyeb Deploy
+```bash
+# 1. GitHub pe fork karo: https://github.com/asbhaibsr/Adds
+# 2. koyeb.com pe account banao
+# 3. "Create App" -> GitHub repo connect karo
+# 4. Environment variables set karo
+# 5. Deploy!
+```
+
+Local run:
 ```bash
 pip install -r requirements.txt
-```
-
-### 2. Configure .env
-```bash
-cp .env.example .env
-# Fill in all values in .env
-```
-
-Required values:
-| Variable | Kahan se milega |
-|---|---|
-| `API_ID` / `API_HASH` | https://my.telegram.org |
-| `BOT_TOKEN` | @BotFather |
-| `OWNER_ID` | @userinfobot se apna ID |
-| `ADMIN_CHANNEL_ID` | Private channel ka ID (bot ko admin banao) |
-| `DATABASE_CHANNEL_ID` | Private DB channel (bot ko admin banao) |
-| `MONGO_URI` | MongoDB Atlas → Connect → Python |
-
-### 3. MongoDB Atlas Setup
-1. [MongoDB Atlas](https://cloud.mongodb.com) pe free cluster banao
-2. Network Access → 0.0.0.0/0 allow karo
-3. Connection string `.env` mein daalo
-
-### 4. Telegram Channels Setup
-- **Admin Channel**: Private channel banao, bot ko admin banao (post+delete rights)
-- **DB Channel**: Alag private channel, bot ko admin banao
-- Dono channel IDs ko `.env` mein daalo
-
-### 5. Mini App Setup (BotFather)
-```
-/newapp → apna bot select karo → Web App URL daalo
-URL format: https://yourserver.com/
-```
-
-### 6. Run Karo
-```bash
 python run.py
 ```
 
 ---
 
-## 🤖 Bot Commands
+## 📁 File Structure
 
-### User Commands
-| Command | Description |
-|---|---|
-| `/start` | Bot start, referral tracking |
-| `/createad` | Ad creation wizard shuru |
-| `/search <query>` | Posts search, inline button results |
-| `/done` | Ad finalize karo |
-
-### Owner-Only Commands
-| Command | Description |
-|---|---|
-| `/addforcesub -100xxxxx` | Force-sub channel add (join-request link) |
-| `/removefchannel -100xxxxx` | Force-sub channel remove |
-| `/stats` | User statistics |
-| `/deletead <ad_id>` | Koi bhi ad delete karo |
-| `/broadcast` | Manual mega-broadcast trigger |
-
----
-
-## 📱 Mini App Features
-
-### User Dashboard (index.html)
-- **🔥 Streak Tab**: Daily check-in button, 7-day progress
-- **👥 Referral Tab**: Unique link, progress bar, share button
-- **🔍 Search Tab**: Real-time post search with clickable results
-- **📢 My Ads Tab**: Status, reach, delete option
-
-### Admin Panel (admin_panel route)
-- User stats (total/active/blocked)
-- Delete any ad by ID
-- Trigger manual broadcast
-- View all force-sub channels
-
----
-
-## 📡 API Routes
-
-| Method | Route | Description |
-|---|---|---|
-| GET | `/api/userinfo` | User ka data fetch |
-| POST | `/api/checkin` | Daily check-in |
-| GET | `/api/my_ads` | User ke ads |
-| POST | `/api/delete_ad` | User apna ad delete kare |
-| GET | `/api/search?q=query` | Posts search |
-| POST | `/api/report_ad` | Post report karo |
-| GET | `/api/admin/stats` | Admin: stats |
-| POST | `/api/admin/delete_ad` | Admin: koi bhi ad delete |
-| POST | `/api/admin/broadcast` | Admin: broadcast trigger |
-
----
-
-## ⚡ Advanced Features
-
-### Flood Wait Handling
-- Telegram FloodWait error aane par → **10-20 minute Deep Sleep**
-- Sleep ke baad queue se continue karta hai
-- `/stats` mein "Deep Sleep: Yes/No" dikhta hai
-
-### Smart Queue
-- 1 post every `POST_INTERVAL_MINUTES` (default: 10 min)
-- Mega-Broadcast: 2x daily at configured times
-- Queue order: First In, First Out
-
-### Copyright Auto-Delete
-- Admin ya user copyright flag kare
-- `COPYRIGHT_DELETE_MINUTES` ke baad auto-delete DB channel se
-- User ko notification milta hai
-
-### Force-Sub System
-- Private channels: Join Request link generate hota hai
-- Bot admin approves request (manually ya auto)
-- User "I've Joined" dabaane par re-check hota hai
-
-### Search System
-- `/search kalki movie` → 5 results as inline buttons
-- Har button = direct link to DB channel post
-- `@bot kalki` → inline query support
-
----
-
-## 🛡️ Safety Features
-
-1. **User Report**: Koi bhi user kisi bhi post ko report kar sakta hai
-2. **Copyright Flag**: Admin approval screen pe "Copyright" button
-3. **Auto-Delete**: Flagged posts auto-delete after N minutes
-4. **Blocked User Cleanup**: Weekly cleanup (Sunday 02:00 UTC)
-5. **Deep Sleep**: Bot account ko protect karta hai FloodWait se
-
----
-
-## 🚀 Deployment (Free Options)
-
-### Railway.app (Recommended)
-```bash
-# railway.toml
-[build]
-builder = "NIXPACKS"
-[deploy]
-startCommand = "python run.py"
 ```
-
-### Render.com
-- Web Service banao, `python run.py` start command
-
-### VPS (DigitalOcean/Hetzner)
-```bash
-pip install supervisor
-# supervisord config se both processes manage karo
+Adds/
+├── main.py           Bot handlers & commands
+├── database.py       MongoDB operations
+├── scheduler.py      Background jobs & broadcasting
+├── app.py            Flask API & Mini App backend
+├── run.py            Entry point
+├── requirements.txt  Dependencies
+├── koyeb.yaml        Koyeb config
+├── templates/
+│   ├── index.html    User Dashboard
+│   └── admin.html    Admin Panel
+└── utils/
+    ├── broadcaster.py  Ad sending
+    └── forcesub.py     Force subscribe
 ```
 
 ---
 
-## 📞 Support
+## 🎮 Commands
 
-Koi issue aaye to:
-1. `.env` values double-check karo
-2. Bot channels mein admin hai ya nahi verify karo
-3. MongoDB Atlas IP whitelist check karo
+| Command | Description | Access |
+|---------|-------------|--------|
+| `/start` | Bot shuru karo | Everyone |
+| `/createad` | Naya ad banao | Everyone |
+| `/myposts` | Apni posts dekho | Everyone |
+| `/search keyword` | Posts search | Everyone |
+| `/done` | Ad finalize | Everyone |
+| `/stats` | Bot statistics | Owner |
+| `/broadcast` | Manual broadcast | Owner |
+| `/addforcesub -100xxx` | Force sub add | Owner |
+| `/removefchannel -100xxx` | Force sub remove | Owner |
+| `/deletead id` | Ad delete | Owner |
+| `/admin` | Admin panel | Owner |
+
+---
+
+## 🔄 2-Round Broadcast System
+
+```
+Approval
+   |
+   v
+Round 1 (Aaj — Turant)
+   |  Sabhi current users ko jaata hai
+   |
+24 ghante baad...
+   |
+   v
+Round 2 (Agle Din)
+   |  Naaye users bhi cover hote hain
+   |
+   v
+Completed — Archive
+```
+
+---
+
+## 💡 Important Notes
+
+**DATABASE_CHANNEL** — Private channel banao, bot ko admin banao, ID daalo. Sab ads yahan store hote hain.
+
+**Redeploy** — Bot startup pe channel check karta hai. `Peer id invalid` aaye toh channel mein bot ko dobara admin banao.
+
+**UptimeRobot** — `https://your-app.koyeb.app/health` add karo monitoring mein. Self-ping bhi built-in hai.
+
+**Admin Dashboard** — Browser se `https://your-app.koyeb.app/admin_panel` kholo, `ADMIN_SECRET` password daalo.
+
+---
+
+## 📜 License
+
+```
+MIT License with Attribution Requirement
+Copyright (c) 2025 @asbhaibsr
+
+Allowed  : Use, modify, deploy
+Not Allowed : Remove @asbhaibsr credit, resell without permission
+```
+
+Full details: [LICENSE](LICENSE)
+
+---
+
+<div align="center">
+
+**Contact: [@asbhaibsr](https://t.me/asbhaibsr) on Telegram**
+
+**GitHub: [github.com/asbhaibsr/Adds](https://github.com/asbhaibsr/Adds)**
+
+⭐ **Agar useful laga toh star dena!**
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=100&section=footer&animation=twinkling" width="100%"/>
+
+<sub>Made with love by <a href="https://t.me/asbhaibsr">@asbhaibsr</a></sub>
+
+</div>
