@@ -2,85 +2,244 @@
 <html lang="hi">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Admin Panel</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>AdManager — Admin Panel</title>
 <style>
-  :root{--bg:#0d0d0d;--surface:#1a1a1a;--surface2:#242424;--border:rgba(255,255,255,0.08);--accent:#ff6b35;--gold:#ffd700;--green:#00e676;--red:#ff5252;--text:#f0f0f0;--muted:#888;--radius:14px}
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);padding:16px;padding-bottom:24px}
-  h2{font-size:18px;margin-bottom:16px;color:var(--accent)}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
-  .card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px}
-  .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
-  .stat{background:var(--surface2);border-radius:10px;padding:14px;text-align:center}
-  .stat-n{font-size:26px;font-weight:900;color:var(--gold)}
-  .stat-l{font-size:11px;color:var(--muted);margin-top:3px}
-  .input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;outline:none;margin-bottom:8px}
-  .input:focus{border-color:var(--accent)}
-  .btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px}
-  .btn-primary{background:linear-gradient(135deg,var(--accent),#e040fb);color:white}
-  .btn-danger{background:rgba(255,82,82,.2);color:var(--red);border:1px solid rgba(255,82,82,.3)}
-  .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
-  .forcesub-item{background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
-  .badge{font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(0,230,118,.15);color:var(--green)}
-  .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-60px);background:#333;color:#fff;padding:10px 20px;border-radius:20px;z-index:99;transition:transform .3s;pointer-events:none}
-  .toast.show{transform:translateX(-50%) translateY(0)}
+:root{
+  --bg:#0d0d0d;--surface:#1a1a1a;--surface2:#242424;
+  --border:rgba(255,255,255,0.08);--accent:#ff6b35;
+  --gold:#ffd700;--green:#00e676;--red:#ff5252;
+  --text:#f0f0f0;--muted:#888;--radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── Login Screen ── */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px 24px;width:100%;max-width:360px;text-align:center}
+.login-logo{font-size:48px;margin-bottom:12px}
+.login-title{font-size:20px;font-weight:800;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+.input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;color:var(--text);font-size:15px;outline:none;margin-bottom:10px;transition:border-color .2s}
+.input:focus{border-color:var(--accent)}
+.btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#e040fb);color:white}
+.btn-primary:active{transform:scale(.97)}
+.btn-danger{background:rgba(255,82,82,.15);color:var(--red);border:1px solid rgba(255,82,82,.3)}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.err-msg{color:var(--red);font-size:13px;margin-top:8px;display:none}
+
+/* ── Dashboard ── */
+.dashboard{display:none;padding:16px;max-width:600px;margin:0 auto;padding-bottom:32px}
+.header{background:linear-gradient(135deg,#1a1a2e,#0f3460);border-radius:16px;padding:20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.header-title{font-size:20px;font-weight:800}
+.header-sub{font-size:12px;color:var(--accent);margin-top:4px}
+.logout-btn{background:rgba(255,82,82,.15);border:1px solid rgba(255,82,82,.3);color:var(--red);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:700}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:12px}
+.card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:14px}
+
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+.stat{background:var(--surface2);border-radius:10px;padding:16px;text-align:center}
+.stat-n{font-size:28px;font-weight:900;color:var(--gold)}
+.stat-l{font-size:11px;color:var(--muted);margin-top:4px}
+
+.forcesub-item{background:var(--surface2);border-radius:8px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.badge{font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(0,230,118,.15);color:var(--green);font-weight:700}
+
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:#333;color:#fff;padding:10px 20px;border-radius:20px;z-index:999;transition:transform .3s;pointer-events:none;max-width:85%;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;height:20px;margin-bottom:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+.section-divider{height:1px;background:var(--border);margin:4px 0 14px}
 </style>
 </head>
 <body>
+
 <div class="toast" id="toast"></div>
 
-<h2>🛡️ Admin Panel</h2>
-
-<!-- Stats -->
-<div class="card">
-  <div class="card-title">📊 User Statistics</div>
-  <div class="stats-grid">
-    <div class="stat"><div class="stat-n" id="stTotal">-</div><div class="stat-l">Total Users</div></div>
-    <div class="stat"><div class="stat-n" id="stActive">-</div><div class="stat-l">Active</div></div>
-    <div class="stat"><div class="stat-n" id="stBlocked">-</div><div class="stat-l">Blocked</div></div>
-    <div class="stat"><div class="stat-n" id="stReports">-</div><div class="stat-l">Pending Reports</div></div>
+<!-- LOGIN SCREEN -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">🛡️</div>
+    <div class="login-title">Admin Panel</div>
+    <div class="login-sub">AdManager Bot — Owner Only</div>
+    <input class="input" type="password" id="secretInput"
+      placeholder="Secret key daalo..."
+      onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="btn btn-primary" onclick="doLogin()">🔐 Login Karo</button>
+    <div class="err-msg" id="errMsg">❌ Galat secret key! Dobara try karo.</div>
   </div>
-  <button class="btn btn-secondary" onclick="loadStats()">🔄 Refresh</button>
 </div>
 
-<!-- Delete Ad -->
-<div class="card">
-  <div class="card-title">🗑️ Ad Delete Karo</div>
-  <input class="input" id="delAdId" placeholder="Ad ID paste karo..."/>
-  <button class="btn btn-danger" onclick="adminDeleteAd()">🗑️ Delete Ad</button>
-</div>
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
 
-<!-- Broadcast -->
-<div class="card">
-  <div class="card-title">📡 Manual Broadcast</div>
-  <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Saare approved ads ko turant queue mein push karo.</div>
-  <button class="btn btn-primary" onclick="triggerBroadcast()">📡 Mega Broadcast Trigger Karo</button>
-</div>
+  <div class="header">
+    <div>
+      <div class="header-title">🛡️ Admin Panel</div>
+      <div class="header-sub">AdManager Bot Dashboard</div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </div>
 
-<!-- Force-Sub Channels -->
-<div class="card">
-  <div class="card-title">📢 Force-Sub Channels</div>
-  <div id="forcesubList" style="margin-bottom:10px">Loading...</div>
-  <div style="font-size:12px;color:var(--muted)">Add/Remove karne ke liye bot commands use karo:<br><code>/addforcesub -100xxxxx</code><br><code>/removefchannel -100xxxxx</code></div>
+  <!-- Stats -->
+  <div class="card">
+    <div class="card-title">📊 User Statistics</div>
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-n" id="stTotal">-</div><div class="stat-l">Total Users</div></div>
+      <div class="stat"><div class="stat-n" id="stActive">-</div><div class="stat-l">Active</div></div>
+      <div class="stat"><div class="stat-n" id="stBlocked">-</div><div class="stat-l">Blocked</div></div>
+      <div class="stat"><div class="stat-n" id="stReports">-</div><div class="stat-l">Pending Reports</div></div>
+    </div>
+    <button class="btn btn-secondary" onclick="loadStats()" style="margin-top:4px">🔄 Refresh Stats</button>
+  </div>
+
+  <!-- Delete Ad -->
+  <div class="card">
+    <div class="card-title">🗑️ Ad Delete Karo</div>
+    <input class="input" id="delAdId" placeholder="Ad ID paste karo..."/>
+    <button class="btn btn-danger" onclick="adminDeleteAd()">🗑️ Delete Ad</button>
+  </div>
+
+  <!-- Broadcast -->
+  <div class="card">
+    <div class="card-title">📡 Manual Broadcast</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px">
+      Saare approved ads ko abhi queue mein push karo — Round 1 ke liye.
+    </div>
+    <button class="btn btn-primary" onclick="triggerBroadcast()">📡 Mega Broadcast Trigger Karo</button>
+  </div>
+
+  <!-- Force-Sub Channels -->
+  <div class="card">
+    <div class="card-title">📢 Force-Sub Channels</div>
+    <div id="forcesubList">
+      <div class="skeleton"></div>
+      <div class="skeleton" style="width:70%"></div>
+    </div>
+    <div class="section-divider"></div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7">
+      Add karne ke liye bot mein type karo:<br>
+      <code style="color:var(--accent)">/addforcesub -100xxxxx</code><br>
+      Hatane ke liye:<br>
+      <code style="color:var(--accent)">/removefchannel -100xxxxx</code>
+    </div>
+  </div>
+
+  <!-- Bot Commands Quick Ref -->
+  <div class="card">
+    <div class="card-title">⚡ Quick Commands</div>
+    <div style="font-size:13px;line-height:2;color:var(--muted)">
+      <code style="color:var(--text)">/stats</code> — Poori stats<br>
+      <code style="color:var(--text)">/broadcast</code> — Manual broadcast<br>
+      <code style="color:var(--text)">/deletead &lt;id&gt;</code> — Ad delete<br>
+      <code style="color:var(--text)">/myposts</code> — Apni posts dekho<br>
+      <code style="color:var(--text)">/admin</code> — Admin panel (bot mein)
+    </div>
+  </div>
+
 </div>
 
 <script>
-const tg      = window.Telegram?.WebApp;
-if (tg) { tg.ready(); tg.expand(); }
-const headers = { 'Content-Type':'application/json', 'X-Telegram-Init-Data': tg?.initData||'' };
+// ── Auth ───────────────────────────────────────────────────────────
+// Pehle Telegram WebApp try karo, nahi toh password login
+const tg = window.Telegram?.WebApp;
+let authHeaders = { 'Content-Type': 'application/json' };
+let isLoggedIn  = false;
+
+function init() {
+  if (tg && tg.initData) {
+    // Telegram WebApp se aaya — seedha dashboard kholo
+    tg.ready(); tg.expand();
+    authHeaders['X-Telegram-Init-Data'] = tg.initData;
+    showDashboard();
+  } else {
+    // Browser se aaya — stored secret check karo
+    const saved = sessionStorage.getItem('admin_secret');
+    if (saved) {
+      authHeaders['X-Admin-Secret'] = saved;
+      showDashboard();
+    } else {
+      showLogin();
+    }
+  }
+}
+
+async function doLogin() {
+  const secret = document.getElementById('secretInput').value.trim();
+  if (!secret) return;
+
+  // Secret verify karo
+  try {
+    authHeaders['X-Admin-Secret'] = secret;
+    const r = await fetch('/api/admin/stats', { headers: authHeaders });
+    if (r.status === 403 || r.status === 401) {
+      document.getElementById('errMsg').style.display = 'block';
+      delete authHeaders['X-Admin-Secret'];
+      return;
+    }
+    const d = await r.json();
+    if (d.error) {
+      document.getElementById('errMsg').style.display = 'block';
+      delete authHeaders['X-Admin-Secret'];
+      return;
+    }
+    // Sahi hai — save karo
+    sessionStorage.setItem('admin_secret', secret);
+    showDashboard();
+    renderStats(d);
+  } catch(e) {
+    document.getElementById('errMsg').style.display = 'block';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('admin_secret');
+  delete authHeaders['X-Admin-Secret'];
+  delete authHeaders['X-Telegram-Init-Data'];
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('secretInput').value = '';
+  document.getElementById('errMsg').style.display = 'none';
+}
+
+function showLogin() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+}
+
+function showDashboard() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  loadStats();
+  loadForceSubChannels();
+}
+
+// ── API Calls ─────────────────────────────────────────────────────
+
+async function safeJson(r) {
+  const text = await r.text();
+  try { return JSON.parse(text); }
+  catch(e) { console.error('JSON parse fail:', text.slice(0,200)); return {error: 'Parse error'}; }
+}
 
 async function loadStats() {
   try {
-    const r = await fetch('/api/admin/stats', { headers });
-    const d = await r.json();
-    if (d.error) return showToast('❌ ' + d.error);
-    document.getElementById('stTotal').textContent   = d.total;
-    document.getElementById('stActive').textContent  = d.active;
-    document.getElementById('stBlocked').textContent = d.blocked;
-    document.getElementById('stReports').textContent = d.pending_reports;
-  } catch(e) { showToast('Error loading stats'); }
+    const r = await fetch('/api/admin/stats', { headers: authHeaders });
+    const d = await safeJson(r);
+    if (d.error) { showToast('❌ ' + d.error); return; }
+    renderStats(d);
+  } catch(e) { showToast('Stats load nahi hue'); }
+}
+
+function renderStats(d) {
+  document.getElementById('stTotal').textContent   = d.total   ?? '-';
+  document.getElementById('stActive').textContent  = d.active  ?? '-';
+  document.getElementById('stBlocked').textContent = d.blocked ?? '-';
+  document.getElementById('stReports').textContent = d.pending_reports ?? d.reports ?? '-';
 }
 
 async function adminDeleteAd() {
@@ -88,48 +247,55 @@ async function adminDeleteAd() {
   if (!id) return showToast('Ad ID daalo pehle!');
   if (!confirm(`Ad "${id}" delete karna hai?`)) return;
   try {
-    const r = await fetch('/api/admin/delete_ad', { method:'POST', headers, body: JSON.stringify({ad_id:id}) });
-    const d = await r.json();
-    showToast(d.success ? '✅ Ad delete ho gaya!' : '❌ ' + d.error);
+    const r = await fetch('/api/admin/delete_ad', {
+      method:'POST', headers: authHeaders,
+      body: JSON.stringify({ad_id: id})
+    });
+    const d = await safeJson(r);
+    showToast(d.success ? '✅ Ad delete ho gaya!' : '❌ ' + (d.error||'Error'));
     if (d.success) document.getElementById('delAdId').value = '';
-  } catch(e) { showToast('Error'); }
+  } catch(e) { showToast('❌ Error aaya'); }
 }
 
 async function triggerBroadcast() {
   try {
-    const r = await fetch('/api/admin/broadcast', { method:'POST', headers, body:'{}' });
-    const d = await r.json();
-    showToast(d.message || '✅ Done!');
-  } catch(e) { showToast('Error'); }
+    const r = await fetch('/api/admin/broadcast', {
+      method:'POST', headers: authHeaders, body:'{}'
+    });
+    const d = await safeJson(r);
+    showToast(d.message || '✅ Broadcast trigger ho gaya!');
+  } catch(e) { showToast('❌ Error'); }
 }
 
 async function loadForceSubChannels() {
   try {
-    const r  = await fetch('/api/admin/forcesub_channels', { headers });
-    const ch = await r.json();
-    if (ch.error) { document.getElementById('forcesubList').textContent = 'Owner only'; return; }
-    if (!ch.length) { document.getElementById('forcesubList').textContent = 'Koi channel nahi hai.'; return; }
-    document.getElementById('forcesubList').innerHTML = ch.map(c => `
+    const r  = await fetch('/api/admin/forcesub_channels', { headers: authHeaders });
+    const d  = await safeJson(r);
+    const el = document.getElementById('forcesubList');
+    if (d.error) { el.textContent = 'Load nahi hua: ' + d.error; return; }
+    const list = d.channels || d;
+    if (!list.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Koi force-sub channel nahi hai.</div>'; return; }
+    el.innerHTML = list.map(c => `
       <div class="forcesub-item">
         <div>
-          <div style="font-size:13px;font-weight:600">${c.title||c.channel_id}</div>
+          <div style="font-size:13px;font-weight:600">${c.title || 'Channel'}</div>
           <div style="font-size:11px;color:var(--muted)">${c.channel_id}</div>
         </div>
         <span class="badge">Active</span>
       </div>
     `).join('');
-  } catch(e) { document.getElementById('forcesubList').textContent = 'Load failed.'; }
+  } catch(e) {
+    document.getElementById('forcesubList').textContent = 'Load failed.';
+  }
 }
 
-function showToast(msg, d=3000) {
+function showToast(msg, dur=3500) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), d);
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
 }
 
-loadStats();
-loadForceSubChannels();
+init();
 </script>
 </body>
-  </html>
+</html>
