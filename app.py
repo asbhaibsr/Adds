@@ -14,6 +14,10 @@ PORT           = int(os.getenv("PORT", 8080))
 BOT_TOKEN      = os.getenv("BOT_TOKEN", "")
 OWNER_ID       = int(os.getenv("OWNER_ID", 0))
 BOT_USERNAME   = os.getenv("BOT_USERNAME", "")
+
+def get_bot_username() -> str:
+    """BOT_USERNAME dynamically read karo — main.py runtime mein set karta hai."""
+    return os.environ.get("BOT_USERNAME", BOT_USERNAME) or BOT_USERNAME
 DB_CHANNEL_ID  = os.getenv("DATABASE_CHANNEL_ID", "")
 DEV_MODE       = os.getenv("DEV_MODE", "false").lower() == "true"
 
@@ -164,8 +168,8 @@ def api_userinfo():
         "streak":         user.get("streak", 0),
         "referral_count": user.get("referral_count", 0),
         "reach":          user.get("total_reach", 0),
-        "referral_link":  f"https://t.me/{BOT_USERNAME}?start=ref_{uid}",
-        "bot_username":   BOT_USERNAME,
+        "referral_link":  f"https://t.me/{get_bot_username()}?start=ref_{uid}",
+        "bot_username":   get_bot_username(),
     })
 
 
