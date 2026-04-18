@@ -1,7 +1,6 @@
 <div align="center">
 
-![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=500&color=FF6B35&center=true&vCenter=true&multiline=true&width=600&height=100&lines=Telegram+Ad+Broadcasting+Bot;50%2C000+Users+Reach+—+FREE!;Made+with+❤️+by+@asbhaibsr)
-
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=180&section=header&text=AdManager%20Bot&fontSize=42&fontColor=fff&animation=twinkling&fontAlignY=32&desc=50%2C000%2B%20Users%20Tak%20Pahuncho%20%E2%80%94%20Bilkul%20FREE!&descAlignY=55&descSize=18" width="100%"/>
 
 [![Telegram Bot](https://img.shields.io/badge/Telegram-Bot-blue?style=for-the-badge&logo=telegram)](https://t.me/AdManagerfreebot)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
@@ -12,7 +11,7 @@
 
 <br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=500&color=FF6B35&center=true&vCenter=true&multiline=true&width=600&height=100&lines=Telegram+Ad+Broadcasting+Bot;50%2C000%2B+Users+Reach+—+FREE!;Made+with+%E2%9D%A4%EF%B8%8F+by+%40asbhaibsr" alt="Typing SVG" />
+![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=500&color=FF6B35&center=true&vCenter=true&multiline=true&width=600&height=100&lines=Telegram+Ad+Broadcasting+Bot;50%2C000+Users+Reach+—+FREE!;Made+with+❤️+by+@asbhaibsr)
 
 </div>
 
