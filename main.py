@@ -50,7 +50,8 @@ def kb_main_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🚀 Dashboard Kholo", web_app=WebAppInfo(url=WEBAPP_URL))],
         [InlineKeyboardButton("📢 Ad Banao / Create Ad", callback_data="start_create_ad")],
-        [InlineKeyboardButton("👥 Refer Karo / Referral Link", callback_data="show_referral")],
+        [InlineKeyboardButton("📖 Posts Browse Karo", callback_data="browse_posts_0")],
+        [InlineKeyboardButton("👥 Refer Karo / Referral", callback_data="show_referral")],
         [InlineKeyboardButton("❓ Help & Commands", callback_data="show_help")],
     ])
 
@@ -67,7 +68,7 @@ async def force_sub_gate(client: Client, user_id: int) -> bool:
             kb = build_join_buttons(missing)
             await client.send_message(
                 user_id,
-                "⛔ **Ruko! Pehle Yeh Channels Join Karo**\n"
+                "⛔ Ruko! Pehle Yeh Channels Join Karo\n"
                 "*(Wait! First join these channels)*\n\n"
                 "━━━━━━━━━━━━━━━━━━━━━━\n"
                 "🔒 Is bot ko use karne ke liye neeche diye gaye channels join karna zaroori hai.\n"
@@ -113,10 +114,10 @@ async def cmd_start(client: Client, message: Message):
                 referrer = db.get_user(referred_by)
                 await client.send_message(
                     referred_by,
-                    "🎉 **10 Referrals Complete! Mubarak Ho!**\n"
+                    "🎉 10 Referrals Complete! Mubarak Ho!\n"
                     "*(Congratulations! 10 Referrals Done!)*\n\n"
                     "━━━━━━━━━━━━━━━━━━━━━━\n"
-                    "🎁 **1 Free Ad Slot Unlock Ho Gaya!**\n"
+                    "🎁 1 Free Ad Slot Unlock Ho Gaya!\n"
                     "*(1 Free Ad Slot has been unlocked!)*\n\n"
                     "Ab apna ad banao aur 50,000+ users tak pahuncho!\n"
                     "*(Now create your ad and reach 50,000+ users!)*",
@@ -135,13 +136,13 @@ async def cmd_start(client: Client, message: Message):
     if args == "create_ad":
         db.save_ad_session(user.id, {"step": "media"})
         return await message.reply(
-            "🎨 **Ad Banana Shuru Karo! / Let's Create Your Ad!**\n\n"
+            "🎨 Ad Banana Shuru Karo! / Let's Create Your Ad!\n\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "**Step 1 of 4 — Media Bhejo / Send Media** 📸\n\n"
+            "Step 1 of 4 — Media Bhejo / Send Media 📸\n\n"
             "📷 Photo bhejo → Image ad banega\n"
             "🎬 Video bhejo → Video ad banega\n"
             "*(Send a photo for image ad, or video for video ad)*\n\n"
-            "💡 **Tip:** High quality image ya video se zyada clicks milte hain!\n"
+            "💡 Tip: High quality image ya video se zyada clicks milte hain!\n"
             "*(High quality media gets more clicks!)*",
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("❌ Cancel / Roko", callback_data="cancel_ad")
@@ -150,33 +151,33 @@ async def cmd_start(client: Client, message: Message):
 
     is_new = not existing
     await message.reply(
-        f"{'🎉 **Swaagat Hai! / Welcome!**' if is_new else '👋 **Wapas Aao! / Welcome Back!**'} "
-        f"**{user.first_name}** 🙌\n\n"
+        f"{'🎉 Swaagat Hai! / Welcome!' if is_new else '👋 Wapas Aao! / Welcome Back!'} "
+        f"{user.first_name} 🙌\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "🚀 **50,000+ USERS TAK PAHUNCHO — BILKUL FREE!**\n"
+        "🚀 50,000+ USERS TAK PAHUNCHO — BILKUL FREE!\n"
         "*(Reach 50,000+ Users — Absolutely FREE!)*\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        "📢 **Yeh Bot Kya Karta Hai? / What does this bot do?**\n"
+        "📢 Yeh Bot Kya Karta Hai? / What does this bot do?\n"
         "Aapka content — channel, post, product, link — hum broadcasting karke "
-        "**50,000+ active Telegram users** tak pahunchate hain. FREE mein!\n"
+        "50,000+ active Telegram users tak pahunchate hain. FREE mein!\n"
         "*(We broadcast your content to 50,000+ active users. For free!)*\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "🎁 **Free Ad Kaise Milega? / How to get a Free Ad?**\n\n"
-        "🔥 **Tarika 1 — Daily Streak:**\n"
+        "🎁 Free Ad Kaise Milega? / How to get a Free Ad?\n\n"
+        "🔥 Tarika 1 — Daily Streak:\n"
         "   Har roz bot pe check-in karo\n"
-        "   7 din lagatar → **1 Free Ad Slot!**\n"
+        "   7 din lagatar → 1 Free Ad Slot!\n"
         "   *(Check-in daily for 7 days → Free Ad)*\n\n"
-        "👥 **Tarika 2 — Refer Karo:**\n"
+        "👥 Tarika 2 — Refer Karo:\n"
         "   10 dosto ko bot use karwao\n"
-        "   → **1 Instant Free Ad!**\n"
+        "   → 1 Instant Free Ad!\n"
         "   *(Get 10 friends to join → Instant Free Ad)*\n\n"
-        "✅ **Tarika 3 — Direct Ad Banao:**\n"
+        "✅ Tarika 3 — Direct Ad Banao:\n"
         "   Neeche button dabao → Media + Text bhejo\n"
         "   → Admin approve karega → Live ho jaayega! 📡\n"
         "   *(Press button → Send media + text → Goes live after approval)*\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "📊 **Live Numbers:** 50k+ Users | 10k+ Reach/Ad | 100+ Daily Posts\n\n"
-        "⬇️ **Shuru Karo! / Get Started!**",
+        "📊 Live Numbers: 50k+ Users | 10k+ Reach/Ad | 100+ Daily Posts\n\n"
+        "⬇️ Shuru Karo! / Get Started!",
         reply_markup=kb_main_menu()
     )
 
@@ -192,7 +193,7 @@ async def cb_check_sub(client: Client, cq: CallbackQuery):
         await cq.message.delete()
         await client.send_message(
             cq.from_user.id,
-            "✅ **Sab Channels Join Ho Gaye!**\n"
+            "✅ Sab Channels Join Ho Gaye!\n"
             "*(All channels joined successfully!)*\n\n"
             "Ab aap bot ka poora faida utha sakte ho!\n"
             "*(You can now use all bot features!)*",
@@ -222,26 +223,26 @@ async def cb_show_referral(client: Client, cq: CallbackQuery):
     ref_link   = f"https://t.me/{BOT_USERNAME}?start=ref_{uid}"
 
     await cq.message.edit_text(
-        "👥 **Referral Program / Refer Karo Kamao!**\n\n"
+        "👥 Referral Program / Refer Karo Kamao!\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📊 **Tumhara Score / Your Score:**\n"
-        f"   🔗 Total Referrals: **{ref_count}**\n"
-        f"   🎁 Free Ads Earned: **{free_ads}**\n"
-        f"   ⏳ Next Free Ad: **{next_in} aur refers chahiye**\n\n"
+        f"📊 Tumhara Score / Your Score:\n"
+        f"   🔗 Total Referrals: {ref_count}\n"
+        f"   🎁 Free Ads Earned: {free_ads}\n"
+        f"   ⏳ Next Free Ad: {next_in} aur refers chahiye\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "🔗 **Tumhara Referral Link / Your Link:**\n"
+        "🔗 Tumhara Referral Link / Your Link:\n"
         f"`{ref_link}`\n\n"
         "*(Is link ko copy karke dosto ko bhejo)*\n"
         "*(Copy this link and share with friends)*\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "📋 **Kaise Kaam Karta Hai? / How it works?**\n\n"
+        "📋 Kaise Kaam Karta Hai? / How it works?\n\n"
         "1️⃣ Apna link dosto ko share karo\n"
         "    *(Share your link with friends)*\n"
         "2️⃣ Dost link se bot start kare\n"
         "    *(Friend starts bot using your link)*\n"
         "3️⃣ Tumhara referral count +1 ho jaata hai\n"
         "    *(Your count goes up by 1)*\n"
-        "4️⃣ **10 refers = 1 Free Ad Slot! 🎁**\n"
+        "4️⃣ 10 refers = 1 Free Ad Slot! 🎁\n"
         "    *(Every 10 refers = 1 Free Ad Slot)*",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("📤 Dosto Ko Share Karo", url=f"https://t.me/share/url?url={ref_link}&text=🚀+Yeh+bot+se+FREE+promotion+milta+hai!")],
@@ -255,9 +256,9 @@ async def cb_show_referral(client: Client, cq: CallbackQuery):
 @app.on_callback_query(filters.regex("^show_help$"))
 async def cb_show_help(client: Client, cq: CallbackQuery):
     await cq.message.edit_text(
-        "❓ **Help & Commands / Madad aur Commands**\n\n"
+        "❓ Help & Commands / Madad aur Commands\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "👤 **User Commands:**\n\n"
+        "👤 User Commands:\n\n"
         "▶️ `/start` — Bot start karo\n"
         "    *(Start the bot)*\n\n"
         "📢 `/createad` — Naya ad banao\n"
@@ -268,14 +269,14 @@ async def cb_show_help(client: Client, cq: CallbackQuery):
         "✅ `/done` — Ad finalize karo (creation ke time)\n"
         "    *(Finalize your ad during creation)*\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "🛡️ **Admin Only Commands:**\n\n"
+        "🛡️ Admin Only Commands:\n\n"
         "📊 `/stats` — Bot statistics dekho\n"
         "➕ `/addforcesub -100xxxxx` — Force-sub channel add karo\n"
         "➖ `/removefchannel -100xxxxx` — Channel remove karo\n"
         "🗑️ `/deletead <id>` — Koi bhi ad delete karo\n"
         "📡 `/broadcast` — Manual mega-broadcast\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "💡 **Tips / Sujhaav:**\n\n"
+        "💡 Tips / Sujhaav:\n\n"
         "• Roz check-in karo streak banao → Free ads pao\n"
         "  *(Daily check-in builds streak → earns Free Ads)*\n"
         "• High quality image/video use karo ads mein\n"
@@ -293,7 +294,7 @@ async def cb_show_help(client: Client, cq: CallbackQuery):
 @app.on_callback_query(filters.regex("^back_to_menu$"))
 async def cb_back_menu(client: Client, cq: CallbackQuery):
     await cq.message.edit_text(
-        "🏠 **Main Menu / Mukhya Menu**\n\n"
+        "🏠 Main Menu / Mukhya Menu\n\n"
         "Neeche se choose karo / Choose from below:",
         reply_markup=kb_main_menu()
     )
@@ -304,7 +305,7 @@ async def cb_back_menu(client: Client, cq: CallbackQuery):
 async def cb_cancel_ad(client: Client, cq: CallbackQuery):
     db.clear_ad_session(cq.from_user.id)
     await cq.message.edit_text(
-        "❌ **Ad Creation Cancel Ho Gaya**\n"
+        "❌ Ad Creation Cancel Ho Gaya\n"
         "*(Ad creation has been cancelled)*\n\n"
         "Jab chahein dobara shuru kar sakte ho!\n"
         "*(You can restart anytime!)*",
@@ -321,7 +322,7 @@ async def cb_cancel_ad(client: Client, cq: CallbackQuery):
 async def cmd_add_forcesub(client: Client, message: Message):
     if not is_owner(message.from_user.id):
         return await message.reply(
-            "❌ **Permission Denied!**\n"
+            "❌ Permission Denied!\n"
             "Yeh command sirf bot owner use kar sakta hai.\n"
             "*(Only the bot owner can use this command.)*"
         )
@@ -331,27 +332,27 @@ async def cmd_add_forcesub(client: Client, message: Message):
         channels = db.get_all_forcesub_channels()
         ch_list  = "\n".join([f"  • `{c['channel_id']}` — {c.get('title','?')}" for c in channels]) or "  _(Koi nahi / None)_"
         return await message.reply(
-            "📢 **Force-Sub Channel Add Karo**\n"
+            "📢 Force-Sub Channel Add Karo\n"
             "*(Add a Force-Subscribe Channel)*\n\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "**Usage / Tarika:**\n"
+            "Usage / Tarika:\n"
             "`/addforcesub -100xxxxxxxxxx`\n\n"
-            "**Zaroori Steps / Required Steps:**\n"
-            "1️⃣ Bot ko us channel ka **Admin** banao\n"
+            "Zaroori Steps / Required Steps:\n"
+            "1️⃣ Bot ko us channel ka Admin banao\n"
             "    *(Make bot admin in that channel)*\n"
-            "2️⃣ Bot ko **Invite Users** permission do\n"
+            "2️⃣ Bot ko Invite Users permission do\n"
             "    *(Give bot 'Invite Users' permission)*\n"
             "3️⃣ Phir yeh command chalao\n"
             "    *(Then run this command)*\n\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"**Abhi Active Channels / Currently Active:**\n{ch_list}"
+            f"Abhi Active Channels / Currently Active:\n{ch_list}"
         )
 
     try:
         ch_id = int(args[0])
     except ValueError:
         return await message.reply(
-            "❌ **Galat ID Format!**\n"
+            "❌ Galat ID Format!\n"
             "*(Wrong ID format!)*\n\n"
             "Sahi format: `-100xxxxxxxxxx`\n"
             "Example: `/addforcesub -1001234567890`"
@@ -371,10 +372,10 @@ async def cmd_add_forcesub(client: Client, message: Message):
             invite_link = getattr(chat, "invite_link", "") or ""
     except Exception as e:
         return await message.reply(
-            f"❌ **Channel Info Nahi Mili!**\n"
+            f"❌ Channel Info Nahi Mili!\n"
             f"*(Could not fetch channel info!)*\n\n"
             f"Error: `{e}`\n\n"
-            f"**Confirm karo:**\n"
+            f"Confirm karo:\n"
             f"✅ Bot us channel mein admin hai?\n"
             f"✅ Channel ID sahi hai? (`-100` se shuru hona chahiye)\n"
             f"*(Make sure bot is admin and channel ID starts with -100)*"
@@ -383,16 +384,16 @@ async def cmd_add_forcesub(client: Client, message: Message):
     added = db.add_forcesub_channel(ch_id, invite_link, title)
     if added:
         await message.reply(
-            f"✅ **Force-Sub Channel Add Ho Gaya!**\n"
+            f"✅ Force-Sub Channel Add Ho Gaya!\n"
             f"*(Force-Sub Channel Added Successfully!)*\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"📢 **Channel:** {title}\n"
-            f"🆔 **ID:** `{ch_id}`\n"
-            f"🔗 **Join Request Link:**\n`{invite_link}`\n\n"
+            f"📢 Channel: {title}\n"
+            f"🆔 ID: `{ch_id}`\n"
+            f"🔗 Join Request Link:\n`{invite_link}`\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"ℹ️ Ab naye users ko pehle is channel mein join request bhejna hoga.\n"
             f"*(New users must send join request to this channel first.)*\n\n"
-            f"📝 **Note:** Private channel hai to admin manually requests approve karega.\n"
+            f"📝 Note: Private channel hai to admin manually requests approve karega.\n"
             f"*(For private channels, admin approves requests manually.)*",
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("➖ Remove Karo", callback_data=f"remove_fsub_{ch_id}")
@@ -400,9 +401,9 @@ async def cmd_add_forcesub(client: Client, message: Message):
         )
     else:
         await message.reply(
-            f"⚠️ **Yeh Channel Pehle Se Add Hai!**\n"
+            f"⚠️ Yeh Channel Pehle Se Add Hai!\n"
             f"*(This channel is already in the force-sub list!)*\n\n"
-            f"Channel: **{title}** (`{ch_id}`)\n\n"
+            f"Channel: {title} (`{ch_id}`)\n\n"
             f"Remove karne ke liye:\n`/removefchannel {ch_id}`"
         )
 
@@ -437,16 +438,16 @@ async def cmd_remove_forcesub(client: Client, message: Message):
         channels = db.get_all_forcesub_channels()
         if not channels:
             return await message.reply(
-                "📭 **Koi Force-Sub Channel Set Nahi Hai**\n"
+                "📭 Koi Force-Sub Channel Set Nahi Hai\n"
                 "*(No force-sub channels configured)*\n\n"
                 "Add karne ke liye:\n`/addforcesub -100xxxxxxxxxx`"
             )
-        lines = "\n".join([f"  • `{c['channel_id']}` — **{c.get('title','?')}**" for c in channels])
+        lines = "\n".join([f"  • `{c['channel_id']}` — {c.get('title','?')}" for c in channels])
         return await message.reply(
-            "📋 **Active Force-Sub Channels:**\n\n"
+            "📋 Active Force-Sub Channels:\n\n"
             f"{lines}\n\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "**Remove karne ke liye / To remove:**\n"
+            "Remove karne ke liye / To remove:\n"
             "`/removefchannel -100xxxxxxxxxx`",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(f"❌ Remove: {c.get('title','?')}", callback_data=f"remove_fsub_{c['channel_id']}")]
@@ -462,7 +463,7 @@ async def cmd_remove_forcesub(client: Client, message: Message):
     removed = db.remove_forcesub_channel(ch_id)
     if removed:
         await message.reply(
-            f"✅ **Channel Remove Ho Gaya!**\n"
+            f"✅ Channel Remove Ho Gaya!\n"
             f"*(Channel removed successfully!)*\n\n"
             f"🆔 ID: `{ch_id}`\n\n"
             f"Ab users ko is channel ko join karna zaroori nahi hoga.\n"
@@ -470,7 +471,7 @@ async def cmd_remove_forcesub(client: Client, message: Message):
         )
     else:
         await message.reply(
-            f"❌ **Channel Nahi Mila List Mein!**\n"
+            f"❌ Channel Nahi Mila List Mein!\n"
             f"*(Channel not found in the list!)*\n\n"
             f"ID: `{ch_id}`\n\n"
             f"Active channels dekhne ke liye: `/removefchannel`"
@@ -486,11 +487,11 @@ async def cmd_search(client: Client, message: Message):
     args = message.command[1:]
     if not args:
         return await message.reply(
-            "🔍 **Search Karo / Search Posts**\n\n"
+            "🔍 Search Karo / Search Posts\n\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "**Usage / Tarika:**\n"
+            "Usage / Tarika:\n"
             "`/search <keyword>`\n\n"
-            "**Examples / Udaharan:**\n"
+            "Examples / Udaharan:\n"
             "• `/search kalki movie`\n"
             "• `/search tech gadgets`\n"
             "• `/search bollywood songs`\n"
@@ -509,10 +510,10 @@ async def cmd_search(client: Client, message: Message):
 
     if not results:
         return await message.reply(
-            f"😕 **Koi Result Nahi Mila!**\n"
+            f"😕 Koi Result Nahi Mila!\n"
             f"*(No results found!)*\n\n"
-            f"🔍 Search: **\"{query}\"**\n\n"
-            f"**Suggestions / Sujhaav:**\n"
+            f"🔍 Search: \"{query}\"\n\n"
+            f"Suggestions / Sujhaav:\n"
             f"• Alag keyword try karo *(Try a different keyword)*\n"
             f"• Chota keyword likho *(Use shorter keyword)*\n"
             f"• Hashtag try karo *(Try a hashtag)*\n\n"
@@ -539,13 +540,13 @@ async def cmd_search(client: Client, message: Message):
     )])
 
     await message.reply(
-        f"🔍 **Search Results / Khoj Nateeja**\n\n"
-        f"Query: **\"{query}\"**\n"
-        f"Found: **{len(results)} post(s)**\n\n"
+        f"🔍 Search Results / Khoj Nateeja\n\n"
+        f"Query: \"{query}\"\n"
+        f"Found: {len(results)} post(s)\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
         f"Neeche diye buttons pe click karke post dekho 👇\n"
         f"*(Click the buttons below to view posts)*\n\n"
-        f"⚠️ **Note:** Copyright posts auto-delete ho jaate hain.\n"
+        f"⚠️ Note: Copyright posts auto-delete ho jaate hain.\n"
         f"*(Copyright posts are auto-deleted.)*",
         reply_markup=InlineKeyboardMarkup(buttons)
     )
@@ -582,7 +583,7 @@ async def inline_search(client: Client, query: InlineQuery):
                 title       = caption[:60] or q,
                 description = tags or "Post dekho / View post",
                 input_message_content=InputTextMessageContent(
-                    f"📌 **{caption[:150]}**\n\n"
+                    f"📌 {caption[:150]}\n\n"
                     f"🏷️ {tags}\n\n"
                     f"[➡️ Post Dekho / View Post]({post_url})"
                 ),
@@ -620,15 +621,15 @@ async def cmd_create_ad(client, update):
     db.save_ad_session(user.id, {"step": "media"})
 
     text = (
-        "🎨 **Ad Banana Shuru Karo! / Let's Create Your Ad!**\n\n"
+        "🎨 Ad Banana Shuru Karo! / Let's Create Your Ad!\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "**Step 1 of 4 — Media Bhejo / Send Media** 📸\n\n"
-        "📷 **Photo bhejo** → Image ad banega\n"
+        "Step 1 of 4 — Media Bhejo / Send Media 📸\n\n"
+        "📷 Photo bhejo → Image ad banega\n"
         "   *(Send a photo → creates image ad)*\n"
-        "🎬 **Video bhejo** → Video ad banega\n"
+        "🎬 Video bhejo → Video ad banega\n"
         "   *(Send a video → creates video ad)*\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "💡 **Tips:**\n"
+        "💡 Tips:\n"
         "• Clear, attractive image use karo\n"
         "• 1:1 ya 16:9 ratio best hota hai\n"
         "• *(Use clear images, 1:1 or 16:9 ratio works best)*"
@@ -648,7 +649,8 @@ async def cmd_create_ad(client, update):
     filters.private
     & (filters.photo | filters.video | filters.animation | filters.text)
     & ~filters.command(["start","search","addforcesub","removefchannel",
-                        "createad","stats","broadcast","deletead","done"])
+                        "createad","stats","broadcast","deletead","done",
+                        "myposts","preview","admin"])
 )
 async def handle_ad_creation(client: Client, message: Message):
     """Multi-step ad creation state machine."""
@@ -669,7 +671,7 @@ async def handle_ad_creation(client: Client, message: Message):
             media_type, file_id = "animation", message.animation.file_id
         else:
             return await message.reply(
-                "❌ **Sirf Photo ya Video Bhejo!**\n"
+                "❌ Sirf Photo ya Video Bhejo!\n"
                 "*(Please send only a photo or video!)*\n\n"
                 "Text messages is step mein accept nahi hote.\n"
                 "*(Text messages are not accepted in this step.)*",
@@ -679,16 +681,16 @@ async def handle_ad_creation(client: Client, message: Message):
             )
         db.save_ad_session(uid, {"step": "caption", "media_type": media_type, "file_id": file_id})
         await message.reply(
-            f"✅ **{media_type.title()} Mil Gaya! / {media_type.title()} Received!**\n\n"
+            f"✅ {media_type.title()} Mil Gaya! / {media_type.title()} Received!\n\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "**Step 2 of 4 — Caption Likho / Write Caption** ✏️\n\n"
+            "Step 2 of 4 — Caption Likho / Write Caption ✏️\n\n"
             "📝 Apne ad ka text likho:\n"
             "*(Write the text for your ad:)*\n\n"
             "• Kya promote kar rahe ho? *(What are you promoting?)*\n"
             "• Link ya contact bhi daal sakte ho\n"
             "  *(You can include a link or contact)*\n"
-            "• Max **1024 characters**\n\n"
-            "💡 **Achi Caption = Zyada Clicks!**\n"
+            "• Max 1024 characters\n\n"
+            "💡 Achi Caption = Zyada Clicks!\n"
             "*(Good caption = More clicks!)*",
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("❌ Cancel / Roko", callback_data="cancel_ad")
@@ -699,7 +701,7 @@ async def handle_ad_creation(client: Client, message: Message):
     elif step == "caption":
         if not message.text:
             return await message.reply(
-                "❌ **Text Mein Caption Likho!**\n"
+                "❌ Text Mein Caption Likho!\n"
                 "*(Please write caption as text!)*\n\n"
                 "Media ya sticker nahi, sirf text chahiye.\n"
                 "*(No media or stickers, text only please.)*"
@@ -707,13 +709,13 @@ async def handle_ad_creation(client: Client, message: Message):
         caption = message.text[:1024]
         db.save_ad_session(uid, {"step": "hashtags", "caption": caption})
         await message.reply(
-            f"✅ **Caption Save Ho Gaya! / Caption Saved!**\n\n"
+            f"✅ Caption Save Ho Gaya! / Caption Saved!\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"**Step 3 of 4 — Hashtags Daalo / Add Hashtags** 🏷️\n\n"
+            f"Step 3 of 4 — Hashtags Daalo / Add Hashtags 🏷️\n\n"
             f"1-5 hashtags likho (space se alag karo):\n"
             f"*(Write 1-5 hashtags, separated by spaces):*\n\n"
-            f"**Format:** `#tag1 #tag2 #tag3`\n\n"
-            f"**Examples / Udaharan:**\n"
+            f"Format: `#tag1 #tag2 #tag3`\n\n"
+            f"Examples / Udaharan:\n"
             f"• `#bollywood #movie #entertainment`\n"
             f"• `#techgadgets #deals #offer`\n"
             f"• `#business #startup #india`\n\n"
@@ -728,33 +730,33 @@ async def handle_ad_creation(client: Client, message: Message):
     elif step == "hashtags":
         if not message.text:
             return await message.reply(
-                "❌ **Hashtags Text Mein Likho!**\n"
+                "❌ Hashtags Text Mein Likho!\n"
                 "*(Please write hashtags as text!)*\n\n"
                 "Format: `#tag1 #tag2`"
             )
         tags = [t.lstrip("#").lower().strip() for t in message.text.split() if t.startswith("#") and len(t) > 1]
         if not tags:
             return await message.reply(
-                "❌ **Koi Valid Hashtag Nahi Mila!**\n"
+                "❌ Koi Valid Hashtag Nahi Mila!\n"
                 "*(No valid hashtag found!)*\n\n"
                 "Hashtag `#` se shuru hona chahiye.\n"
                 "*(Hashtags must start with #)*\n\n"
                 "Example: `#movie #tech #deals`"
             )
         tags = tags[:5]
-        tags_display = " ".join([f"**#{t}**" for t in tags])
+        tags_display = " ".join([f"#{t}" for t in tags])
         db.save_ad_session(uid, {"step": "buttons", "hashtags": tags})
         await message.reply(
-            f"✅ **Hashtags Save! / Hashtags Saved!**\n"
+            f"✅ Hashtags Save! / Hashtags Saved!\n"
             f"Tags: {tags_display}\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"**Step 4 of 4 — Inline Buttons (Optional) / Buttons** 🔗\n\n"
+            f"Step 4 of 4 — Inline Buttons (Optional) / Buttons 🔗\n\n"
             f"Apne ad mein clickable buttons add karo.\n"
             f"*(Add clickable buttons to your ad.)*\n\n"
-            f"**Format / Tarika:**\n"
+            f"Format / Tarika:\n"
             f"`Button ka naam | https://yourlink.com`\n"
             f"Ek line = ek button (max 3)\n\n"
-            f"**Example:**\n"
+            f"Example:\n"
             f"`Channel Join Karo | https://t.me/yourchannel`\n"
             f"`Website Dekho | https://yourwebsite.com`\n\n"
             f"Buttons nahi chahiye? Neeche 'Skip' dabao.\n"
@@ -769,7 +771,7 @@ async def handle_ad_creation(client: Client, message: Message):
     elif step == "buttons":
         if not message.text:
             return await message.reply(
-                "❌ **Text Mein Buttons Likho!**\n"
+                "❌ Text Mein Buttons Likho!\n"
                 "Format: `Title | https://link.com`\n"
                 "Ya skip karo neeche button se."
             )
@@ -787,7 +789,7 @@ async def handle_ad_creation(client: Client, message: Message):
 
         if not rows and errors:
             return await message.reply(
-                "❌ **Galat Format!** *(Wrong format!)*\n\n"
+                "❌ Galat Format! *(Wrong format!)*\n\n"
                 "Sahi format:\n`Button Name | https://link.com`\n\n"
                 f"Tumhari line: `{errors[0]}`\n\n"
                 "Link `https://` se shuru hona chahiye.\n"
@@ -796,6 +798,34 @@ async def handle_ad_creation(client: Client, message: Message):
 
         db.save_ad_session(uid, {"step": "position", "buttons": rows})
         await _show_position_editor(client, uid, rows)
+
+    # ── Extra Button Add Step ─────────────────────────────────────
+    elif step == "add_extra_button":
+        if not message.text or "|" not in message.text:
+            return await message.reply(
+                "❌ Galat Format!\n"
+                "Sahi format: `Button Name | https://link.com`\n\n"
+                "Example: `Join Channel | https://t.me/mychannel`"
+            )
+        parts   = message.text.split("|", 1)
+        btn_txt = parts[0].strip()
+        btn_url = parts[1].strip()
+        if not btn_url.startswith("http"):
+            return await message.reply(
+                "❌ URL galat hai! `https://` se shuru karo.\n"
+                "Example: `https://t.me/mychannel`"
+            )
+        existing = db.get_ad_session(uid)
+        buttons  = existing.get("buttons", []) if existing else []
+        buttons.append([{"text": btn_txt, "url": btn_url}])
+        db.save_ad_session(uid, {"step": "position", "buttons": buttons})
+        await message.reply(
+            f"✅ Button Add Ho Gaya!\n\n"
+            f"Button: `{btn_txt}`\n"
+            f"URL: `{btn_url}`\n\n"
+            f"Total buttons: {sum(len(r) for r in buttons)}/3"
+        )
+        await _show_position_editor(client, uid, buttons)
 
     # ── Done shortcut via text ────────────────────────────────────
     elif step == "position":
@@ -809,7 +839,7 @@ async def cmd_done(client: Client, message: Message):
         await _finalize_ad(client, message.from_user, session)
     else:
         await message.reply(
-            "❌ **Koi Active Ad Session Nahi Hai**\n"
+            "❌ Koi Active Ad Session Nahi Hai\n"
             "*(No active ad creation session)*\n\n"
             "Naya ad banane ke liye:\n`/createad`"
         )
@@ -822,18 +852,19 @@ async def cb_skip_buttons(client: Client, cq: CallbackQuery):
         return await cq.answer("Session expire ho gaya. /createad se dobara shuru karo.", show_alert=True)
     db.save_ad_session(cq.from_user.id, {"step": "position", "buttons": []})
     await cq.message.edit_text(
-        "⏭️ **Buttons Skip Kiye / Buttons Skipped**\n\n"
+        "⏭️ Buttons Skip Kiye / Buttons Skipped\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        "🎉 **Ad Almost Ready! / Ad Tayyar Hone Wala Hai!**\n\n"
-        "Sab kuch theek lag raha hai? Submit karo!\n"
-        "*(Everything looks good? Submit it!)*\n\n"
-        "**Ad ko Submit karne ke baad:**\n"
+        "🎉 Ad Almost Ready! / Ad Tayyar Hone Wala Hai!\n\n"
+        "Pehle preview dekho, phir submit karo!\n"
+        "*(First check the preview, then submit!)*\n\n"
+        "Ad submit hone ke baad:\n"
         "1️⃣ Admin review karega *(Admin will review)*\n"
         "2️⃣ Approve hone par queue mein jaayega *(Goes to queue after approval)*\n"
         "3️⃣ 50,000+ users tak pahunchega! *(Reaches 50,000+ users!)*",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🚀 Submit Ad / Bhejo!", callback_data="submit_ad")],
-            [InlineKeyboardButton("❌ Cancel / Roko", callback_data="cancel_ad")],
+            [InlineKeyboardButton("👁️ Preview Dekho",         callback_data="preview_ad")],
+            [InlineKeyboardButton("🚀 Submit Ad / Bhejo!",    callback_data="submit_ad")],
+            [InlineKeyboardButton("❌ Cancel / Roko",          callback_data="cancel_ad")],
         ])
     )
     await cq.answer()
@@ -848,7 +879,7 @@ async def cb_submit_ad(client: Client, cq: CallbackQuery):
             show_alert=True
         )
     await cq.message.edit_text(
-        "⏳ **Ad Submit Ho Raha Hai...**\n"
+        "⏳ Ad Submit Ho Raha Hai...\n"
         "*(Submitting your ad...)*\n\n"
         "Please wait... 🔄"
     )
@@ -859,9 +890,9 @@ async def _show_position_editor(client: Client, user_id: int, buttons: list):
     layout = _render_button_layout(buttons)
     await client.send_message(
         user_id,
-        f"🔧 **Button Arrangement / Button Position**\n\n"
+        f"🔧 Button Arrangement / Button Position\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"**Current Layout / Abhi Ka Layout:**\n"
+        f"Current Layout / Abhi Ka Layout:\n"
         f"{layout}\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
         f"Buttons upar-neeche ya left-right move karo.\n"
@@ -882,16 +913,22 @@ def _render_button_layout(buttons: list) -> str:
 
 
 def _position_keyboard(buttons: list, selected: int) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
+    total = sum(len(row) for row in buttons)
+    rows = [
         [InlineKeyboardButton("⬆️ Upar / Up",    callback_data=f"btn_up_{selected}")],
         [
-            InlineKeyboardButton("⬅️ Baayein / Left",  callback_data=f"btn_left_{selected}"),
-            InlineKeyboardButton("Daayein / Right ➡️", callback_data=f"btn_right_{selected}"),
+            InlineKeyboardButton("⬅️ Left",  callback_data=f"btn_left_{selected}"),
+            InlineKeyboardButton("Right ➡️", callback_data=f"btn_right_{selected}"),
         ],
         [InlineKeyboardButton("⬇️ Neeche / Down", callback_data=f"btn_down_{selected}")],
-        [InlineKeyboardButton("🚀 Submit Karo! / Submit Ad!", callback_data="submit_ad")],
-        [InlineKeyboardButton("❌ Cancel / Roko",            callback_data="cancel_ad")],
-    ])
+    ]
+    # Add new button option (max 3 buttons)
+    if total < 3:
+        rows.append([InlineKeyboardButton("➕ Naya Button Add Karo", callback_data="add_new_button")])
+    rows.append([InlineKeyboardButton("👁️ Preview Dekho",          callback_data="preview_ad")])
+    rows.append([InlineKeyboardButton("🚀 Submit Karo! / Submit Ad!", callback_data="submit_ad")])
+    rows.append([InlineKeyboardButton("❌ Cancel / Roko",            callback_data="cancel_ad")])
+    return InlineKeyboardMarkup(rows)
 
 
 @app.on_callback_query(filters.regex(r"^btn_(up|down|left|right)_(\d+)$"))
@@ -918,14 +955,18 @@ async def cb_position(client: Client, cq: CallbackQuery):
         if len(row) > 1: row.append(row.pop(0))
 
     db.save_ad_session(cq.from_user.id, {"buttons": buttons})
-    await cq.message.edit_text(
-        f"🔧 **Layout Update Ho Gaya! / Layout Updated!**\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"{_render_button_layout(buttons)}\n"
-        f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"✅ Theek lag raha hai? Submit karo!",
-        reply_markup=_position_keyboard(buttons, idx)
-    )
+    try:
+        await cq.message.edit_text(
+            f"🔧 Button Layout / Button Position\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"{_render_button_layout(buttons)}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"✅ Theek lag raha hai? Submit karo!\n"
+            f"👁️ Preview dekhna chahte ho? /preview likho",
+            reply_markup=_position_keyboard(buttons, idx)
+        )
+    except Exception:
+        pass  # MESSAGE_NOT_MODIFIED — ignore
     await cq.answer("✅ Updated!")
 
 
@@ -956,26 +997,26 @@ async def _finalize_ad(client, user, session: dict):
         log.error(f"DB channel send failed: {e}")
         return await client.send_message(
             uid,
-            f"❌ **Ad Submit Nahi Ho Saka!**\n"
+            f"❌ Ad Submit Nahi Ho Saka!\n"
             f"*(Ad could not be submitted!)*\n\n"
             f"Error: `{e}`\n\n"
             f"Dobara try karo: `/createad`"
         )
 
     # 2. Save ad to MongoDB
-    ad_id = db.create_ad(uid, {**session, "db_channel_msg_id": db_msg.id})
+    ad_id = db.create_ad(uid, {session, "db_channel_msg_id": db_msg.id})
 
     # 3. Send to admin channel for approval
     await client.send_message(
         ADMIN_CHANNEL,
-        f"📢 **Naya Ad Approval Chahiye / New Ad Needs Approval**\n\n"
+        f"📢 Naya Ad Approval Chahiye / New Ad Needs Approval\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 **User:** [{user.first_name}](tg://user?id={uid}) (`{uid}`)\n"
-        f"🆔 **Ad ID:** `{ad_id}`\n"
-        f"📝 **Caption:** {caption[:200]}\n"
-        f"🏷️ **Tags:** {tags_text}\n"
-        f"🔗 **Buttons:** {len(kb_data)} row(s)\n"
-        f"📦 **Type:** {session.get('media_type','text').title()}\n\n"
+        f"👤 User: [{user.first_name}](tg://user?id={uid}) (`{uid}`)\n"
+        f"🆔 Ad ID: `{ad_id}`\n"
+        f"📝 Caption: {caption[:200]}\n"
+        f"🏷️ Tags: {tags_text}\n"
+        f"🔗 Buttons: {len(kb_data)} row(s)\n"
+        f"📦 Type: {session.get('media_type','text').title()}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
         f"✅ Approve = Queue mein jaayega\n"
         f"❌ Reject = User ko reject notification\n"
@@ -990,17 +1031,17 @@ async def _finalize_ad(client, user, session: dict):
     db.clear_ad_session(uid)
     await client.send_message(
         uid,
-        "🎉 **Ad Submit Ho Gaya! / Ad Submitted Successfully!**\n\n"
+        "🎉 Ad Submit Ho Gaya! / Ad Submitted Successfully!\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🆔 **Ad ID:** `{ad_id}`\n\n"
-        "**Aage Kya Hoga? / What happens next?**\n\n"
+        f"🆔 Ad ID: `{ad_id}`\n\n"
+        "Aage Kya Hoga? / What happens next?\n\n"
         "1️⃣ ⏳ Admin tumhara ad review karega\n"
         "    *(Admin will review your ad)*\n"
         "2️⃣ ✅ Approve hone par queue mein add hoga\n"
         "    *(After approval, it goes to broadcast queue)*\n"
         f"3️⃣ 📡 Har {os.getenv('POST_INTERVAL_MINUTES','10')} minute mein ek post jaata hai\n"
         "    *(One post goes out every 10 minutes)*\n"
-        "4️⃣ 🚀 **50,000+ users tak pahunchega!**\n"
+        "4️⃣ 🚀 50,000+ users tak pahunchega!\n"
         "    *(Reaches 50,000+ users!)*\n\n"
         "📊 Dashboard mein status track karo!\n"
         "*(Track status in your dashboard!)*",
@@ -1031,10 +1072,10 @@ async def cb_approve(client: Client, cq: CallbackQuery):
         try:
             await client.send_message(
                 ad["owner_id"],
-                "🎊 **Tumhara Ad APPROVE Ho Gaya! / Your Ad is APPROVED!**\n\n"
+                "🎊 Tumhara Ad APPROVE Ho Gaya! / Your Ad is APPROVED!\n\n"
                 "━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"🆔 Ad ID: `{ad_id}`\n\n"
-                "✅ **Broadcasting queue mein add ho gaya!**\n"
+                "✅ Broadcasting queue mein add ho gaya!\n"
                 "*(Added to broadcasting queue!)*\n\n"
                 f"⏰ Approximately har {os.getenv('POST_INTERVAL_MINUTES','10')} minute mein ek post\n"
                 "*(Approx one post every 10 minutes)*\n\n"
@@ -1066,10 +1107,10 @@ async def cb_reject(client: Client, cq: CallbackQuery):
         try:
             await client.send_message(
                 ad["owner_id"],
-                "😔 **Tumhara Ad Reject Ho Gaya / Your Ad Was Rejected**\n\n"
+                "😔 Tumhara Ad Reject Ho Gaya / Your Ad Was Rejected\n\n"
                 "━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"🆔 Ad ID: `{ad_id}`\n\n"
-                "**Possible Reasons / Sambhavit Karan:**\n"
+                "Possible Reasons / Sambhavit Karan:\n"
                 "• Ad unclear ya low quality tha\n"
                 "  *(Ad was unclear or low quality)*\n"
                 "• Misleading content tha\n"
@@ -1077,7 +1118,7 @@ async def cb_reject(client: Client, cq: CallbackQuery):
                 "• Guidelines violate ki thi\n"
                 "  *(Guidelines were violated)*\n\n"
                 "━━━━━━━━━━━━━━━━━━━━━━\n"
-                "🔄 **Dobara Try Karo / Try Again:**\n"
+                "🔄 Dobara Try Karo / Try Again:\n"
                 "• High quality media use karo\n"
                 "• Clear aur honest caption likho\n"
                 "• Copyright content mat daalo",
@@ -1106,21 +1147,21 @@ async def cb_copyright(client: Client, cq: CallbackQuery):
         try:
             await client.send_message(
                 ad["owner_id"],
-                f"⚠️ **Copyright Warning! / Copyright Ullanghghan!**\n\n"
+                f"⚠️ Copyright Warning! / Copyright Ullanghghan!\n\n"
                 "━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"🆔 Ad ID: `{ad_id}`\n\n"
-                "🚫 **Tumhare ad mein copyright content detect hua hai.**\n"
+                "🚫 Tumhare ad mein copyright content detect hua hai.\n"
                 "*(Copyright content was detected in your ad.)*\n\n"
-                f"⏰ Yeh post **{COPYRIGHT_MINS} minutes** mein auto-delete ho jaayega.\n"
+                f"⏰ Yeh post {COPYRIGHT_MINS} minutes mein auto-delete ho jaayega.\n"
                 f"*(This post will be auto-deleted in {COPYRIGHT_MINS} minutes.)*\n\n"
                 "━━━━━━━━━━━━━━━━━━━━━━\n"
-                "📋 **Copyright Content Kya Hota Hai?**\n"
+                "📋 Copyright Content Kya Hota Hai?\n"
                 "*(What counts as copyright content?)*\n\n"
                 "• Movies, web series ke clips/posters\n"
                 "• Pirated software ya apps\n"
                 "• Kisi aur ka music ya video bina permission\n"
                 "• *(Movie clips, pirated software, unauthorized music/video)*\n\n"
-                "✅ **Agli baar original content use karo!**\n"
+                "✅ Agli baar original content use karo!\n"
                 "*(Use original content next time!)*",
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("📢 Original Ad Banao", callback_data="start_create_ad")
@@ -1147,12 +1188,12 @@ async def cb_report(client: Client, cq: CallbackQuery):
     try:
         await client.send_message(
             OWNER_ID,
-            f"🚨 **User Report Aaya! / User Report Received!**\n\n"
+            f"🚨 User Report Aaya! / User Report Received!\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"👤 **Reporter:** `{reporter}`\n"
-            f"🆔 **Ad ID:** `{ad_id}`\n"
-            f"📋 **Reason:** User Report\n\n"
-            f"**Action lene ke liye:**\n"
+            f"👤 Reporter: `{reporter}`\n"
+            f"🆔 Ad ID: `{ad_id}`\n"
+            f"📋 Reason: User Report\n\n"
+            f"Action lene ke liye:\n"
             f"`/deletead {ad_id}`",
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("🗑️ Delete Ad", callback_data=f"admin_del_{ad_id}"),
@@ -1193,16 +1234,16 @@ async def cmd_stats(client: Client, message: Message):
     reports = len(db.get_pending_reports())
     sleeping = sched.is_sleeping()
     await message.reply(
-        "📊 **Bot Statistics / Bot Ki Jankaari**\n\n"
+        "📊 Bot Statistics / Bot Ki Jankaari\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👥 **Total Users:**      `{stats['total']}`\n"
-        f"✅ **Active Users:**     `{stats['active']}`\n"
-        f"🚫 **Blocked Users:**    `{stats['blocked']}`\n\n"
-        f"🚨 **Pending Reports:**  `{reports}`\n\n"
+        f"👥 Total Users:      `{stats['total']}`\n"
+        f"✅ Active Users:     `{stats['active']}`\n"
+        f"🚫 Blocked Users:    `{stats['blocked']}`\n\n"
+        f"🚨 Pending Reports:  `{reports}`\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🤖 **Bot Status:**\n"
+        f"🤖 Bot Status:\n"
         f"🛌 Deep Sleep: `{'⚠️ YES — FloodWait!' if sleeping else '✅ No — Running'}`\n\n"
-        "**Quick Actions:**",
+        "Quick Actions:",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("📡 Broadcast Now", callback_data="admin_broadcast")],
             [InlineKeyboardButton("🚀 Admin Dashboard", url=f"{WEBAPP_URL}/admin_panel")],
@@ -1225,8 +1266,8 @@ async def cmd_delete_ad(client: Client, message: Message):
     args = message.command[1:]
     if not args:
         return await message.reply(
-            "🗑️ **Ad Delete Karo / Delete an Ad**\n\n"
-            "**Usage:** `/deletead <ad_id>`\n\n"
+            "🗑️ Ad Delete Karo / Delete an Ad\n\n"
+            "Usage: `/deletead <ad_id>`\n\n"
             "Ad ID dashboard se ya approval message se milega.\n"
             "*(Ad ID can be found in dashboard or approval message.)*"
         )
@@ -1235,7 +1276,7 @@ async def cmd_delete_ad(client: Client, message: Message):
     ad    = db.get_ad(ad_id)
     if not ad:
         return await message.reply(
-            f"❌ **Ad Nahi Mila! / Ad Not Found!**\n\n"
+            f"❌ Ad Nahi Mila! / Ad Not Found!\n\n"
             f"ID: `{ad_id}`\n\n"
             f"Sahi ID check karo. *(Please verify the correct ID.)*"
         )
@@ -1249,14 +1290,14 @@ async def cmd_delete_ad(client: Client, message: Message):
 
     db.delete_ad(ad_id)
     await message.reply(
-        f"✅ **Ad Delete Ho Gaya! / Ad Deleted!**\n\n"
+        f"✅ Ad Delete Ho Gaya! / Ad Deleted!\n\n"
         f"🆔 Ad ID: `{ad_id}`\n"
         f"👤 Owner: `{owner_id}`"
     )
     try:
         await client.send_message(
             owner_id,
-            f"ℹ️ **Tumhara Ad Delete Kar Diya Gaya / Your Ad Was Deleted**\n\n"
+            f"ℹ️ Tumhara Ad Delete Kar Diya Gaya / Your Ad Was Deleted\n\n"
             f"🆔 Ad ID: `{ad_id}`\n\n"
             f"Admin ne guidelines violation ke karan yeh ad delete kiya.\n"
             f"*(Admin deleted this ad due to guideline violation.)*\n\n"
@@ -1276,7 +1317,7 @@ async def cmd_broadcast(client: Client, message: Message):
     await message.reply("⏳ Mega-broadcast queue ho raha hai... *(Queueing mega-broadcast...)*")
     await sched.mega_broadcast()
     await message.reply(
-        "✅ **Mega-Broadcast Queue Ho Gaya! / Mega-Broadcast Queued!**\n\n"
+        "✅ Mega-Broadcast Queue Ho Gaya! / Mega-Broadcast Queued!\n\n"
         f"Saare approved ads queue mein push kar diye.\n"
         f"Har {os.getenv('POST_INTERVAL_MINUTES','10')} minute mein ek post jaayega.\n"
         f"*(All approved ads pushed to queue. One post every 10 minutes.)*"
@@ -1286,6 +1327,247 @@ async def cmd_broadcast(client: Client, message: Message):
 @app.on_callback_query(filters.regex("^noop$"))
 async def cb_noop(client: Client, cq: CallbackQuery):
     await cq.answer()
+
+
+@app.on_callback_query(filters.regex("^add_new_button$"))
+async def cb_add_new_button(client: Client, cq: CallbackQuery):
+    """Let user add another button to the ad."""
+    session = db.get_ad_session(cq.from_user.id)
+    if not session:
+        return await cq.answer("Session expire ho gaya! /createad se dobara shuru karo.", show_alert=True)
+    buttons = session.get("buttons", [])
+    total   = sum(len(row) for row in buttons)
+    if total >= 3:
+        return await cq.answer("❌ Max 3 buttons allowed!", show_alert=True)
+    db.save_ad_session(cq.from_user.id, {"step": "add_extra_button"})
+    await cq.message.edit_text(
+        "➕ Naya Button Add Karo\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Neeche format mein type karo:\n"
+        "`Button ka naam | https://link.com`\n\n"
+        "Example:\n"
+        "`Join Channel | https://t.me/mychannel`\n\n"
+        "⚠️ Link `https://` se shuru hona chahiye.",
+        reply_markup=InlineKeyboardMarkup([[
+            InlineKeyboardButton("❌ Cancel", callback_data="cancel_ad")
+        ]])
+    )
+    await cq.answer()
+
+
+@app.on_callback_query(filters.regex("^preview_ad$"))
+async def cb_preview_ad(client: Client, cq: CallbackQuery):
+    """Show a live preview of the ad before submitting."""
+    session = db.get_ad_session(cq.from_user.id)
+    if not session:
+        return await cq.answer("Session expire ho gaya! /createad se dobara shuru karo.", show_alert=True)
+
+    from utils.broadcaster import _build_keyboard
+    caption   = session.get("caption", "") or ""
+    tags_text = " ".join([f"#{t}" for t in session.get("hashtags", [])])
+    full_cap  = f"{caption}\n\n{tags_text}".strip()
+    kb_data   = session.get("buttons", [])
+    preview_kb = _build_keyboard(kb_data) if kb_data else None
+
+    # Add submit/edit buttons below preview
+    action_kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🚀 Submit Karo! Final Hai!", callback_data="submit_ad")],
+        [InlineKeyboardButton("✏️ Edit Karo (Buttons)", callback_data="back_to_buttons")],
+        [InlineKeyboardButton("❌ Cancel", callback_data="cancel_ad")],
+    ])
+
+    await cq.answer("👁️ Yeh raha tumhara ad preview!")
+    mtype = session.get("media_type", "text")
+    fid   = session.get("file_id")
+    try:
+        if mtype == "photo" and fid:
+            await client.send_photo(cq.from_user.id, fid, caption=f"👁️ PREVIEW:\n\n{full_cap}",
+                                    reply_markup=preview_kb)
+        elif mtype == "video" and fid:
+            await client.send_video(cq.from_user.id, fid, caption=f"👁️ PREVIEW:\n\n{full_cap}",
+                                    reply_markup=preview_kb)
+        elif mtype == "animation" and fid:
+            await client.send_animation(cq.from_user.id, fid, caption=f"👁️ PREVIEW:\n\n{full_cap}",
+                                        reply_markup=preview_kb)
+        else:
+            await client.send_message(cq.from_user.id, f"👁️ PREVIEW:\n\n{full_cap}",
+                                      reply_markup=preview_kb)
+    except Exception as e:
+        log.warning(f"Preview send failed: {e}")
+
+    await client.send_message(
+        cq.from_user.id,
+        "⬆️ Yeh tha tumhara ad ka preview!\n\n"
+        "Sab theek hai? Submit karo ya edit karo:",
+        reply_markup=action_kb
+    )
+
+
+@app.on_callback_query(filters.regex("^back_to_buttons$"))
+async def cb_back_to_buttons(client: Client, cq: CallbackQuery):
+    session = db.get_ad_session(cq.from_user.id)
+    if not session:
+        return await cq.answer("Session expire ho gaya!", show_alert=True)
+    buttons = session.get("buttons", [])
+    await cq.message.edit_text(
+        f"🔧 Button Layout / Position\n\n"
+        f"{_render_button_layout(buttons)}\n\n"
+        f"Buttons move karo ya submit karo:",
+        reply_markup=_position_keyboard(buttons, 0)
+    )
+    await cq.answer()
+
+
+# ── /myposts command ──────────────────────────────────────────────
+
+@app.on_message(filters.command("myposts") & filters.private)
+async def cmd_myposts(client: Client, message: Message):
+    """Show all user's posts with navigation."""
+    uid  = message.from_user.id
+    ads  = db.get_user_ads(uid)
+    if not ads:
+        return await message.reply(
+            "📭 Tumhara Koi Ad Nahi Hai!\n"
+            "*(You have no ads yet!)*\n\n"
+            "Pehla ad banane ke liye:\n`/createad`",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("📢 Ad Banao", callback_data="start_create_ad")
+            ]])
+        )
+    # Show paginated (first post)
+    await _send_mypost_page(client, uid, ads, 0, message)
+
+
+async def _send_mypost_page(client, uid, ads, idx, message_or_cq, edit=False):
+    ad      = ads[idx]
+    total   = len(ads)
+    status  = ad.get("status", "?")
+    caption = (ad.get("caption") or "")[:300]
+    tags    = " ".join([f"#{t}" for t in ad.get("hashtags", [])])
+    reach   = ad.get("reach", 0)
+    ad_id   = str(ad.get("_id", ""))
+    status_emoji = {"approved": "✅", "pending": "⏳", "rejected": "❌", "deleted": "🗑️"}.get(status, "❓")
+
+    text = (
+        f"📢 Meri Post {idx+1} / {total}\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"{status_emoji} Status: {status.upper()}\n"
+        f"👁️ Reach: {reach}\n"
+        f"🏷️ Tags: {tags or 'None'}\n\n"
+        f"📝 Caption:\n{caption}\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🆔 Ad ID: `{ad_id}`"
+    )
+
+    nav_row = []
+    if idx > 0:
+        nav_row.append(InlineKeyboardButton("◀️ Pehle", callback_data=f"mypost_nav_{idx-1}"))
+    if idx < total - 1:
+        nav_row.append(InlineKeyboardButton("Agle ▶️", callback_data=f"mypost_nav_{idx+1}"))
+
+    action_row = [InlineKeyboardButton("🗑️ Delete", callback_data=f"mypost_del_{ad_id}_{idx}")]
+    if ad.get("db_channel_msg_id"):
+        ch_str = str(DB_CHANNEL).replace("-100", "")
+        url    = f"https://t.me/c/{ch_str}/{ad['db_channel_msg_id']}"
+        action_row.insert(0, InlineKeyboardButton("📌 Post Dekho", url=url))
+
+    kb_rows = []
+    if nav_row:    kb_rows.append(nav_row)
+    kb_rows.append(action_row)
+    kb_rows.append([InlineKeyboardButton("📢 Naya Ad Banao", callback_data="start_create_ad")])
+    kb = InlineKeyboardMarkup(kb_rows)
+
+    if edit:
+        try:
+            await message_or_cq.message.edit_text(text, reply_markup=kb)
+        except Exception:
+            pass
+    else:
+        await message_or_cq.reply(text, reply_markup=kb)
+
+
+@app.on_callback_query(filters.regex(r"^mypost_nav_(\d+)$"))
+async def cb_mypost_nav(client: Client, cq: CallbackQuery):
+    idx = int(cq.matches[0].group(1))
+    ads = db.get_user_ads(cq.from_user.id)
+    if not ads or idx >= len(ads):
+        return await cq.answer("Post nahi mili!", show_alert=True)
+    await _send_mypost_page(client, cq.from_user.id, ads, idx, cq, edit=True)
+    await cq.answer()
+
+
+@app.on_callback_query(filters.regex(r"^mypost_del_([^_]+)_(\d+)$"))
+async def cb_mypost_del(client: Client, cq: CallbackQuery):
+    ad_id = cq.matches[0].group(1)
+    idx   = int(cq.matches[0].group(2))
+    ad    = db.get_ad(ad_id)
+    if not ad or ad.get("owner_id") != cq.from_user.id:
+        return await cq.answer("Ad nahi mila!", show_alert=True)
+    if ad.get("db_channel_msg_id"):
+        try:
+            await client.delete_messages(DB_CHANNEL, ad["db_channel_msg_id"])
+        except Exception:
+            pass
+    db.delete_ad(ad_id)
+    await cq.answer("✅ Ad delete ho gaya!")
+    # Show next post or empty message
+    ads = db.get_user_ads(cq.from_user.id)
+    if ads:
+        new_idx = min(idx, len(ads) - 1)
+        await _send_mypost_page(client, cq.from_user.id, ads, new_idx, cq, edit=True)
+    else:
+        try:
+            await cq.message.edit_text(
+                "📭 Saare ads delete ho gaye!\nNaya ad banao: /createad",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("📢 Naya Ad Banao", callback_data="start_create_ad")
+                ]])
+            )
+        except Exception:
+            pass
+
+
+# ── /admin command ────────────────────────────────────────────────
+
+@app.on_message(filters.command("admin") & filters.private)
+async def cmd_admin(client: Client, message: Message):
+    if not is_owner(message.from_user.id):
+        return await message.reply("❌ Sirf owner ke liye hai! *(Owner only!)*")
+    stats   = db.get_user_stats()
+    reports = len(db.get_pending_reports())
+    await message.reply(
+        "🛡️ Admin Panel\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"👥 Total Users: `{stats['total']}`\n"
+        f"✅ Active: `{stats['active']}`\n"
+        f"🚫 Blocked: `{stats['blocked']}`\n"
+        f"🚨 Pending Reports: `{reports}`\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n"
+        "Commands:\n"
+        "`/stats` — Poori stats\n"
+        "`/broadcast` — Manual broadcast\n"
+        "`/addforcesub -100xxx` — Force sub channel add\n"
+        "`/removefchannel -100xxx` — Remove\n"
+        "`/deletead <id>` — Ad delete\n\n"
+        "Admin dashboard neeche button se kholo:",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("🖥️ Admin Dashboard Kholo", url=f"{WEBAPP_URL}/admin_panel")],
+            [InlineKeyboardButton("📡 Broadcast Karo", callback_data="admin_broadcast")],
+            [InlineKeyboardButton("📊 Stats Dekho", callback_data="show_admin_stats")],
+        ])
+    )
+
+
+@app.on_callback_query(filters.regex("^show_admin_stats$"))
+async def cb_show_admin_stats(client: Client, cq: CallbackQuery):
+    if not is_owner(cq.from_user.id):
+        return await cq.answer("Owner only!", show_alert=True)
+    stats   = db.get_user_stats()
+    reports = len(db.get_pending_reports())
+    await cq.answer(
+        f"👥 Total: {stats['total']} | ✅ Active: {stats['active']} | 🚨 Reports: {reports}",
+        show_alert=True
+    )
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1306,3 +1588,146 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# ══════════════════════════════════════════════════════════════════
+#  BROWSE POSTS — next/back + like/unlike + owner notification
+# ══════════════════════════════════════════════════════════════════
+
+def _browse_keyboard(idx: int, total: int, ad_id: str, liked: bool, likes: int) -> InlineKeyboardMarkup:
+    nav = []
+    if idx > 0:
+        nav.append(InlineKeyboardButton("◀️ Pehli Post", callback_data=f"browse_posts_{idx-1}"))
+    if idx < total - 1:
+        nav.append(InlineKeyboardButton("Agli Post ▶️", callback_data=f"browse_posts_{idx+1}"))
+
+    like_btn = InlineKeyboardButton(
+        f"{'❤️' if liked else '🤍'} {likes} Like{'s' if likes != 1 else ''}",
+        callback_data=f"like_post_{ad_id}_{idx}"
+    )
+    return InlineKeyboardMarkup([
+        nav,
+        [like_btn],
+        [InlineKeyboardButton("📢 Apna Ad Banao", callback_data="start_create_ad")],
+        [InlineKeyboardButton("🏠 Menu", callback_data="back_to_menu")],
+    ] if nav else [
+        [like_btn],
+        [InlineKeyboardButton("📢 Apna Ad Banao", callback_data="start_create_ad")],
+        [InlineKeyboardButton("🏠 Menu", callback_data="back_to_menu")],
+    ])
+
+
+async def _show_browse_post(client: Client, cq: CallbackQuery, idx: int):
+    ads = db.get_all_browseable_ads()
+    if not ads:
+        try:
+            await cq.message.edit_text(
+                "📭 Abhi koi post nahi hai!\n\nPehla ad banao:\n/createad",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("📢 Ad Banao", callback_data="start_create_ad")
+                ]])
+            )
+        except Exception:
+            pass
+        return await cq.answer()
+
+    total = len(ads)
+    idx   = max(0, min(idx, total - 1))
+    ad    = ads[idx]
+    ad_id = str(ad["_id"])
+    uid   = cq.from_user.id
+
+    liked      = db.has_liked(ad_id, uid)
+    likes      = ad.get("likes", 0)
+    caption    = ad.get("caption", "") or ""
+    tags       = " ".join([f"#{t}" for t in ad.get("hashtags", [])])
+    full_cap   = f"{caption}\n\n{tags}".strip()
+    browse_cap = (
+        f"📌 Post {idx+1} / {total}\n\n"
+        f"{full_cap}\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"❤️ {likes} likes"
+    )
+
+    kb = _browse_keyboard(idx, total, ad_id, liked, likes)
+
+    # Build ad buttons if any
+    from utils.broadcaster import _build_keyboard
+    ad_kb = _build_keyboard(ad.get("buttons", [])) if ad.get("buttons") else None
+
+    mtype = ad.get("media_type", "text")
+    fid   = ad.get("file_id")
+
+    try:
+        # Delete old message and send new (media messages can't be edited easily)
+        await cq.message.delete()
+    except Exception:
+        pass
+
+    try:
+        if mtype == "photo" and fid:
+            await client.send_photo(uid, fid, caption=browse_cap, reply_markup=kb)
+        elif mtype == "video" and fid:
+            await client.send_video(uid, fid, caption=browse_cap, reply_markup=kb)
+        elif mtype == "animation" and fid:
+            await client.send_animation(uid, fid, caption=browse_cap, reply_markup=kb)
+        else:
+            await client.send_message(uid, browse_cap, reply_markup=kb)
+    except Exception as e:
+        log.warning(f"Browse send failed: {e}")
+        await client.send_message(uid, browse_cap, reply_markup=kb)
+
+    await cq.answer()
+
+
+@app.on_callback_query(filters.regex(r"^browse_posts_(\d+)$"))
+async def cb_browse_posts(client: Client, cq: CallbackQuery):
+    idx = int(cq.matches[0].group(1))
+    await _show_browse_post(client, cq, idx)
+
+
+@app.on_callback_query(filters.regex(r"^like_post_([^_]+)_(\d+)$"))
+async def cb_like_post(client: Client, cq: CallbackQuery):
+    ad_id = cq.matches[0].group(1)
+    idx   = int(cq.matches[0].group(2))
+    uid   = cq.from_user.id
+    user  = cq.from_user
+
+    result = db.toggle_like(ad_id, uid)
+    liked  = result["liked"]
+    total  = result["total_likes"]
+
+    await cq.answer(
+        f"{'❤️ Like kiya!' if liked else '💔 Unlike kiya!'} Total: {total}",
+        show_alert=False
+    )
+
+    # Notify ad owner
+    ad = db.get_ad(ad_id)
+    if ad and ad.get("owner_id") != uid:
+        try:
+            uname    = f"@{user.username}" if user.username else user.first_name
+            action   = "like" if liked else "unlike"
+            emoji    = "❤️" if liked else "💔"
+            cap_prev = (ad.get("caption") or "")[:50]
+            await client.send_message(
+                ad["owner_id"],
+                f"{emoji} Tumhari post ko {uname} ne {action} kiya!\n\n"
+                f"Post: {cap_prev}...\n"
+                f"Total likes: {total}"
+            )
+        except Exception:
+            pass
+
+    # Refresh the browse view with updated like count
+    ads   = db.get_all_browseable_ads()
+    total_ads = len(ads)
+    idx   = max(0, min(idx, total_ads - 1))
+    new_ad = ads[idx] if ads else None
+    if not new_ad:
+        return
+
+    new_kb = _browse_keyboard(idx, total_ads, ad_id, liked, total)
+    try:
+        await cq.message.edit_reply_markup(new_kb)
+    except Exception:
+        pass
