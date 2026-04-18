@@ -9,58 +9,100 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key  = os.getenv("FLASK_SECRET_KEY", "viral-bot-secret-2025")
-PORT            = int(os.getenv("PORT", os.getenv("FLASK_PORT", 8080)))
-BOT_TOKEN       = os.getenv("BOT_TOKEN", "")
-OWNER_ID        = int(os.getenv("OWNER_ID", 0))
-BOT_USERNAME    = os.getenv("BOT_USERNAME", "")
-DB_CHANNEL_ID   = os.getenv("DATABASE_CHANNEL_ID", "")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "viral-bot-secret-2025")
+PORT           = int(os.getenv("PORT", 8080))
+BOT_TOKEN      = os.getenv("BOT_TOKEN", "")
+OWNER_ID       = int(os.getenv("OWNER_ID", 0))
+BOT_USERNAME   = os.getenv("BOT_USERNAME", "")
+DB_CHANNEL_ID  = os.getenv("DATABASE_CHANNEL_ID", "")
+DEV_MODE       = os.getenv("DEV_MODE", "false").lower() == "true"
 
 
-# ─── HEALTH CHECK — DB import nahi, seedha OK deta hai ───────────
+# ─── Health check ─────────────────────────────────────────────────
 @app.route("/health")
 def health():
-    return jsonify({"status": "ok", "service": "viral-streak-bot"}), 200
+    return jsonify({"status": "ok"}), 200
 
 
-# ─── DB lazy import (sirf tab jab actually zaroorat ho) ──────────
 def get_db():
     import database as db
     return db
 
 
-# ─── Telegram WebApp Auth ─────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════
+#  TELEGRAM WEBAPP AUTH — sahi hmac implementation
+# ═══════════════════════════════════════════════════════════════════
 
 def verify_telegram_webapp(init_data: str) -> dict | None:
-    """Verify Telegram WebApp initData. Returns user dict or None."""
+    """
+    Telegram WebApp initData verify karo.
+    Returns user dict or None.
+    """
+    if not init_data:
+        return None
     try:
-        from urllib.parse import unquote
-        pairs = {}
-        for part in unquote(init_data).split("&"):
-            if "=" in part:
-                k, v = part.split("=", 1)
-                pairs[k] = v
-        received_hash = pairs.pop("hash", None)
+        from urllib.parse import unquote, parse_qsl
+        # Parse initData string
+        parsed = dict(parse_qsl(unquote(init_data), keep_blank_values=True))
+        received_hash = parsed.pop("hash", None)
         if not received_hash:
             return None
-        check_string = "\n".join(f"{k}={v}" for k, v in sorted(pairs.items()))
-        secret_key   = hmac.new(b"WebAppData", BOT_TOKEN.encode(), "sha256").digest()
-        expected     = hmac.new(secret_key, check_string.encode(), "sha256").hexdigest()
-        if not hmac.compare_digest(expected, received_hash):
+
+        # Data-check string banao — sorted key=value lines
+        data_check_string = "\n".join(
+            f"{k}={v}" for k, v in sorted(parsed.items())
+        )
+
+        # Secret key = HMAC-SHA256("WebAppData", bot_token)
+        secret_key = hmac.new(
+            key=b"WebAppData",
+            msg=BOT_TOKEN.encode("utf-8"),
+            digestmod=hashlib.sha256
+        ).digest()
+
+        # Expected hash
+        expected_hash = hmac.new(
+            key=secret_key,
+            msg=data_check_string.encode("utf-8"),
+            digestmod=hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(expected_hash, received_hash):
             return None
-        user_json = pairs.get("user", "{}")
+
+        # User object parse karo
+        user_json = parsed.get("user", "{}")
         return json.loads(user_json)
-    except Exception:
+
+    except Exception as e:
+        app.logger.warning(f"Auth verify error: {e}")
         return None
+
+
+def _get_tg_user_from_request() -> dict | None:
+    """
+    Request se Telegram user nikalo.
+    DEV_MODE mein bina auth ke owner ka user return karo.
+    """
+    # DEV_MODE — testing ke liye auth skip
+    if DEV_MODE:
+        return {"id": OWNER_ID, "first_name": "Dev", "username": "dev"}
+
+    init_data = (
+        request.headers.get("X-Telegram-Init-Data", "")
+        or request.args.get("initData", "")
+        or ""
+    )
+    return verify_telegram_webapp(init_data) if init_data else None
 
 
 def require_telegram_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        init_data = request.headers.get("X-Telegram-Init-Data") or request.args.get("initData", "")
-        user = verify_telegram_webapp(init_data) if init_data else None
+        user = _get_tg_user_from_request()
         if not user:
-            return jsonify({"error": "Unauthorized"}), 401
+            # JSON error return karo — HTML nahi
+            return jsonify({"error": "Unauthorized — Telegram auth fail"}), 401
         request.tg_user = user
         return f(*args, **kwargs)
     return decorated
@@ -69,16 +111,17 @@ def require_telegram_auth(f):
 def require_owner(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        init_data = request.headers.get("X-Telegram-Init-Data") or request.args.get("initData", "")
-        user = verify_telegram_webapp(init_data) if init_data else None
-        if not user or user.get("id") != OWNER_ID:
-            return jsonify({"error": "Forbidden"}), 403
+        user = _get_tg_user_from_request()
+        if not user or int(user.get("id", 0)) != OWNER_ID:
+            return jsonify({"error": "Forbidden — owner only"}), 403
         request.tg_user = user
         return f(*args, **kwargs)
     return decorated
 
 
-# ─── HTML Pages ────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════
+#  HTML PAGES
+# ═══════════════════════════════════════════════════════════════════
 
 @app.route("/")
 def index():
@@ -90,22 +133,39 @@ def admin_panel():
     return render_template("admin.html")
 
 
-# ─── API Routes ────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════
+#  API ROUTES
+# ═══════════════════════════════════════════════════════════════════
 
 @app.route("/api/userinfo", methods=["GET"])
 @require_telegram_auth
 def api_userinfo():
-    db = get_db()
-    uid  = request.tg_user.get("id")
-    user = db.get_or_create_user(uid, request.tg_user.get("username", ""), request.tg_user.get("first_name", ""))
+    db   = get_db()
+    tgu  = request.tg_user
+    uid  = int(tgu.get("id", 0))
+    user = db.get_or_create_user(
+        uid,
+        tgu.get("username", ""),
+        tgu.get("first_name", "") + " " + tgu.get("last_name", "")
+    )
+    # full_name fallback chain
+    full_name = (
+        user.get("full_name", "")
+        or tgu.get("first_name", "")
+        or "User"
+    ).strip()
+
     return jsonify({
         "user_id":        uid,
         "username":       user.get("username", ""),
-        "name":           user.get("name", ""),
+        "name":           full_name,
+        "full_name":      full_name,
         "free_ads":       user.get("free_ads_earned", 0),
         "streak":         user.get("streak", 0),
         "referral_count": user.get("referral_count", 0),
+        "reach":          user.get("total_reach", 0),
         "referral_link":  f"https://t.me/{BOT_USERNAME}?start=ref_{uid}",
+        "bot_username":   BOT_USERNAME,
     })
 
 
@@ -113,26 +173,31 @@ def api_userinfo():
 @require_telegram_auth
 def api_checkin():
     db  = get_db()
-    uid = request.tg_user.get("id")
-    result = db.daily_checkin(uid)
-    return jsonify(result)
+    uid = int(request.tg_user.get("id", 0))
+    return jsonify(db.daily_checkin(uid))
 
 
 @app.route("/api/my_ads", methods=["GET"])
 @require_telegram_auth
 def api_my_ads():
-    db   = get_db()
-    uid  = request.tg_user.get("id")
-    ads  = db.get_user_ads(uid)
-    safe = []
+    db     = get_db()
+    uid    = int(request.tg_user.get("id", 0))
+    ads    = db.get_user_ads(uid)
+    ch_str = str(DB_CHANNEL_ID).replace("-100", "")
+    safe   = []
     for ad in ads:
+        msg_id    = ad.get("db_channel_msg_id")
+        ad_id_str = str(ad.get("_id", ""))
         safe.append({
-            "ad_id":    str(ad.get("_id", "")),
+            "ad_id":    ad_id_str,
+            "id":       ad_id_str,
             "status":   ad.get("status", ""),
             "caption":  (ad.get("caption") or "")[:100],
             "hashtags": ad.get("hashtags", []),
             "reach":    ad.get("reach", 0),
+            "likes":    ad.get("likes", 0),
             "created":  str(ad.get("created_at", "")),
+            "link":     f"https://t.me/c/{ch_str}/{msg_id}" if msg_id else "",
         })
     return jsonify({"ads": safe})
 
@@ -141,8 +206,9 @@ def api_my_ads():
 @require_telegram_auth
 def api_delete_ad():
     db    = get_db()
-    uid   = request.tg_user.get("id")
-    ad_id = request.json.get("ad_id")
+    uid   = int(request.tg_user.get("id", 0))
+    data  = request.get_json(silent=True) or {}
+    ad_id = data.get("ad_id")
     ad    = db.get_ad(ad_id)
     if not ad or ad.get("owner_id") != uid:
         return jsonify({"error": "Not found or not your ad"}), 404
@@ -156,16 +222,17 @@ def api_search():
     query = request.args.get("q", "").strip()
     if not query:
         return jsonify({"results": []})
+    ch_str  = str(DB_CHANNEL_ID).replace("-100", "")
     results = db.search_ads(query, limit=10)
     safe    = []
-    ch_str  = str(DB_CHANNEL_ID).replace("-100", "")
     for ad in results:
         msg_id = ad.get("db_channel_msg_id")
         safe.append({
             "ad_id":    str(ad.get("_id", "")),
             "caption":  (ad.get("caption") or "")[:200],
             "hashtags": ad.get("hashtags", []),
-            "post_url": f"https://t.me/c/{ch_str}/{msg_id}" if msg_id else "",
+            "tags":     ad.get("hashtags", []),
+            "link":     f"https://t.me/c/{ch_str}/{msg_id}" if msg_id else "",
         })
     return jsonify({"results": safe})
 
@@ -173,30 +240,29 @@ def api_search():
 @app.route("/api/report_ad", methods=["POST"])
 @require_telegram_auth
 def api_report_ad():
-    db       = get_db()
-    uid      = request.tg_user.get("id")
-    ad_id    = request.json.get("ad_id")
-    reason   = request.json.get("reason", "user_report")
+    db     = get_db()
+    uid    = int(request.tg_user.get("id", 0))
+    data   = request.get_json(silent=True) or {}
+    ad_id  = data.get("ad_id")
+    reason = data.get("reason", "user_report")
     db.add_report(uid, ad_id, reason)
     return jsonify({"success": True})
 
 
-# ─── Admin API Routes ──────────────────────────────────────────────
+# ─── Admin APIs ────────────────────────────────────────────────────
 
 @app.route("/api/admin/stats", methods=["GET"])
 @require_owner
 def api_admin_stats():
-    db    = get_db()
-    stats = db.get_user_stats()
-    return jsonify(stats)
+    return jsonify(get_db().get_user_stats())
 
 
 @app.route("/api/admin/delete_ad", methods=["POST"])
 @require_owner
 def api_admin_delete_ad():
-    db    = get_db()
-    ad_id = request.json.get("ad_id")
-    db.delete_ad(ad_id)
+    data  = request.get_json(silent=True) or {}
+    ad_id = data.get("ad_id")
+    get_db().delete_ad(ad_id)
     return jsonify({"success": True})
 
 
@@ -209,12 +275,23 @@ def api_admin_broadcast():
 @app.route("/api/admin/forcesub_channels", methods=["GET"])
 @require_owner
 def api_admin_forcesub():
-    db       = get_db()
-    channels = db.get_all_forcesub_channels()
+    channels = get_db().get_all_forcesub_channels()
     return jsonify({"channels": [
         {"channel_id": c["channel_id"], "title": c.get("title", ""), "invite_link": c.get("invite_link", "")}
         for c in channels
     ]})
+
+
+# ─── 404 / 500 — always JSON, kabhi HTML nahi ─────────────────────
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "Not found"}), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    return jsonify({"error": "Server error", "detail": str(e)}), 500
 
 
 if __name__ == "__main__":
