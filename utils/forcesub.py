@@ -1,3 +1,9 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║          AdManager Bot — by @asbhaibsr                          ║
+# ║  Unauthorized use, resale or redistribution is prohibited.      ║
+# ║  GitHub: https://github.com/asbhaibsr/Adds                      ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
 from pyrogram import Client
 from pyrogram.errors import UserNotParticipant, ChatAdminRequired
 from database import get_all_forcesub_channels
