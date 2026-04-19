@@ -220,7 +220,9 @@ async function init() {
     const streak = d.streak || 0;
     const reach  = d.reach  || 0;
     document.getElementById('userSub').textContent  = `Streak: ${streak} 🔥 | Reach: ${fmt(reach)}`;
-    document.getElementById('reachNum').textContent = fmt(reach) + '+';
+    // ── ANIMATED FAKE LIVE REACH COUNTER ──
+    // Real reach ke upar se random increment karta rehta hai
+    startFakeLiveReach(reach);
     document.getElementById('streakNum').textContent= streak;
     document.getElementById('refCount').textContent = d.referral_count || 0;
     document.getElementById('freeAds').textContent  = d.free_ads || 0;
@@ -259,6 +261,42 @@ function fmt(n) {
   if (n>=1e6) return (n/1e6).toFixed(1)+'M';
   if (n>=1e3) return (n/1e3).toFixed(0)+'k';
   return n.toString();
+}
+
+// ══════════════════════════════════════════════════
+// ANIMATED LIVE REACH COUNTER — real base + fake increment
+// User ke liye engaging animated number dikhata hai
+// ══════════════════════════════════════════════════
+let _liveReachTimer = null;
+function startFakeLiveReach(realReach) {
+  if (_liveReachTimer) clearInterval(_liveReachTimer);
+
+  // Base: real reach ya minimum 1000 (believable starting point)
+  let current = Math.max(realReach, 1000);
+  const el = document.getElementById('reachNum');
+  if (!el) return;
+
+  // Pehle display karo
+  el.textContent = fmt(current) + '+';
+
+  // Har 2-4 seconds mein random 1-15 add karo
+  function tick() {
+    const increment = Math.floor(Math.random() * 15) + 1;
+    current += increment;
+    el.textContent = fmt(current) + '+';
+
+    // Flash animation
+    el.style.transition = 'color 0.3s';
+    el.style.color = '#ff9f43';
+    setTimeout(() => { el.style.color = ''; }, 400);
+
+    // Next tick random interval (2000-5000ms)
+    const nextIn = Math.floor(Math.random() * 3000) + 2000;
+    _liveReachTimer = setTimeout(tick, nextIn);
+  }
+
+  // Start after 1.5s delay
+  _liveReachTimer = setTimeout(tick, 1500);
 }
 
 async function doCheckin() {
