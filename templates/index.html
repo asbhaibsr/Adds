@@ -21,7 +21,7 @@
   .user-name { font-size: 17px; font-weight: 700; }
   .user-sub { font-size: 12px; color: var(--accent2); margin-top: 2px; }
   .reach-banner { margin-top: 16px; background: rgba(255,107,53,0.12); border: 1px solid rgba(255,107,53,0.3); border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
-  .reach-num { font-size: 26px; font-weight: 800; color: var(--accent); }
+  .reach-num { font-size: 26px; font-weight: 800; color: var(--accent); transition: color 0.3s; }
   .reach-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
   .reach-badge { background: var(--accent); color: white; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 20px; animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.65} }
@@ -57,17 +57,21 @@
   .progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
   .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--gold)); border-radius: 3px; transition: width .5s ease; }
   .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  /* ── SEARCH ── */
   .search-bar { display: flex; gap: 8px; margin-bottom: 12px; }
   .search-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 15px; outline: none; transition: border-color .2s; }
   .search-input:focus { border-color: var(--accent); }
   .search-btn { background: var(--accent); border: none; border-radius: 10px; padding: 0 16px; color: white; font-size: 20px; cursor: pointer; }
+  /* ── POST CARD (search results + my ads) ── */
   .post-card { background: var(--surface2); border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); }
   .post-caption { font-size: 14px; line-height: 1.55; color: var(--text); margin-bottom: 8px; white-space: pre-wrap; word-break: break-word; }
-  .post-tags { font-size: 11px; color: var(--accent); margin-bottom: 10px; }
+  .post-tags { font-size: 11px; color: var(--accent); margin-bottom: 8px; word-break: break-word; }
   .post-meta { font-size: 11px; color: var(--muted); display: flex; gap: 12px; margin-bottom: 10px; }
-  .post-btns { display: flex; flex-wrap: wrap; gap: 7px; }
-  .post-btn { flex: 1; min-width: 120px; padding: 10px 8px; background: rgba(255,107,53,0.15); border: 1px solid rgba(255,107,53,0.35); border-radius: 10px; color: var(--accent); font-size: 13px; font-weight: 600; text-align: center; text-decoration: none; display: block; transition: background .2s; }
+  .post-btns-row { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px; }
+  .post-btn { flex: 1; min-width: 100px; padding: 10px 8px; background: rgba(255,107,53,0.15); border: 1px solid rgba(255,107,53,0.35); border-radius: 10px; color: var(--accent); font-size: 13px; font-weight: 600; text-align: center; text-decoration: none; display: block; transition: background .2s; }
   .post-btn:active { background: rgba(255,107,53,0.3); }
+  .post-actions { display: flex; gap: 8px; margin-top: 10px; }
+  /* ── MY ADS ── */
   .ad-card { background: var(--surface2); border-radius: 10px; padding: 14px; margin-bottom: 10px; border-left: 3px solid var(--border); }
   .ad-card.approved { border-left-color: var(--green); }
   .ad-card.pending  { border-left-color: var(--gold); }
@@ -86,6 +90,7 @@
   @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
   .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
   .empty-state .icon { font-size: 48px; margin-bottom: 10px; }
+  .section-label { font-size: 12px; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: .5px; }
 </style>
 </head>
 <body>
@@ -101,7 +106,7 @@
   </div>
   <div class="reach-banner">
     <div>
-      <div class="reach-num"   id="reachNum">50,000+</div>
+      <div class="reach-num" id="reachNum">1,000+</div>
       <div class="reach-label">Total Live Reach</div>
     </div>
     <div class="reach-badge">🔴 LIVE</div>
@@ -174,12 +179,15 @@
 <div class="page" id="page-search">
   <div class="search-bar">
     <input type="text" class="search-input" id="searchInput"
-      placeholder="Search karo... (kalki, tech, deals)"
+      placeholder="Search karo ya latest posts dekho..."
       onkeydown="if(event.key==='Enter')doSearch()"/>
     <button class="search-btn" onclick="doSearch()">🔍</button>
   </div>
+  <div class="section-label" id="searchLabel">📢 Latest Posts</div>
   <div id="searchResults">
-    <div class="empty-state"><div class="icon">🔎</div><div>Koi bhi keyword search karo</div></div>
+    <div class="skeleton" style="height:120px;margin-bottom:10px"></div>
+    <div class="skeleton" style="height:120px;margin-bottom:10px"></div>
+    <div class="skeleton" style="height:120px;margin-bottom:10px"></div>
   </div>
 </div>
 
@@ -207,13 +215,24 @@ const initData = tg?.initData || '';
 const headers  = { 'Content-Type':'application/json', 'X-Telegram-Init-Data': initData };
 let userData = null, myAdsData = [];
 
+// ── INIT ──────────────────────────────────────────────────────────
 async function init() {
   try {
-    const r = await fetch("/api/userinfo", { headers });
+    const r    = await fetch("/api/userinfo", { headers });
     const text = await r.text();
     let d = null;
-    try { d = JSON.parse(text); } catch(je) { console.error("JSON parse fail:", text.slice(0,200)); return; }
-    if (!d || d.error) return console.error('Auth fail:', d?.error);
+    try { d = JSON.parse(text); }
+    catch(je) {
+      console.error("JSON parse fail — response:", text.slice(0,300));
+      // Auth fail — still load latest posts
+      loadLatestPosts();
+      return;
+    }
+    if (!d || d.error) {
+      console.error('Auth fail:', d?.error);
+      loadLatestPosts();
+      return;
+    }
     userData = d;
     window.__botUsername = d.bot_username || '';
 
@@ -223,43 +242,64 @@ async function init() {
 
     const streak = d.streak || 0;
     const reach  = d.reach  || 0;
-    document.getElementById('userSub').textContent  = `Streak: ${streak} 🔥 | Reach: ${fmt(reach)}`;
-    // ── ANIMATED FAKE LIVE REACH COUNTER ──
-    // Real reach ke upar se random increment karta rehta hai
-    startFakeLiveReach(reach);
-    document.getElementById('streakNum').textContent= streak;
-    document.getElementById('refCount').textContent = d.referral_count || 0;
-    document.getElementById('freeAds').textContent  = d.free_ads || 0;
+    document.getElementById('userSub').textContent = `Streak: ${streak} 🔥 | Reach: ${fmt(reach)}`;
 
-    // Referral link — guaranteed to be correct now
+    // ── Animated live reach ──
+    startFakeLiveReach(reach);
+
+    document.getElementById('streakNum').textContent = streak;
+    document.getElementById('refCount').textContent  = d.referral_count || 0;
+    document.getElementById('freeAds').textContent   = d.free_ads || 0;
+
     const refLink = d.referral_link ||
       (d.bot_username ? `https://t.me/${d.bot_username}?start=ref_${d.user_id}` : 'Loading...');
     document.getElementById('refLink').textContent = refLink;
 
-    // Streak circle
     const pct = Math.min((streak / 7) * 100, 100);
     document.getElementById('streakCircle').style.setProperty('--pct', pct);
     const dots = document.querySelectorAll('#dayDots .dot');
     dots.forEach((dot,i) => {
       dot.classList.remove('done','today');
-      if (i < streak-1) dot.classList.add('done');
+      if (i < streak-1)            dot.classList.add('done');
       else if (i === streak-1 && streak>0) dot.classList.add('today');
     });
 
-    // Referral progress
     const rc   = d.referral_count || 0;
     const prog = (rc % 10) / 10 * 100;
     document.getElementById('refProgress').style.width      = prog + '%';
     document.getElementById('refProgressLabel').textContent = `${rc % 10} / 10 refers`;
 
-    // Streak message
-    if (streak >= 7)      document.getElementById('streakMsg').textContent = '🏆 7-Day Streak! 1 Free Ad Unlock Ho Gaya!';
-    else if (streak > 0)  document.getElementById('streakMsg').textContent = `${7-streak} din aur → 7-Day Streak! 💪`;
+    if (streak >= 7)     document.getElementById('streakMsg').textContent = '🏆 7-Day Streak! 1 Free Ad Unlock Ho Gaya!';
+    else if (streak > 0) document.getElementById('streakMsg').textContent = `${7-streak} din aur → 7-Day Streak! 💪`;
 
     loadMyAds();
-  } catch(e) { console.error('Init:', e); }
+    loadLatestPosts();
+  } catch(e) {
+    console.error('Init error:', e);
+    loadLatestPosts();
+  }
 }
 
+// ── ANIMATED LIVE REACH COUNTER ───────────────────────────────────
+let _liveTimer = null;
+function startFakeLiveReach(realReach) {
+  if (_liveTimer) clearTimeout(_liveTimer);
+  let current = Math.max(parseInt(realReach)||0, 1000);
+  const el = document.getElementById('reachNum');
+  if (!el) return;
+  el.textContent = fmt(current) + '+';
+
+  function tick() {
+    current += Math.floor(Math.random() * 15) + 1;
+    el.textContent = fmt(current) + '+';
+    el.style.color = '#ff9f43';
+    setTimeout(() => { el.style.color = ''; }, 400);
+    _liveTimer = setTimeout(tick, Math.floor(Math.random() * 3000) + 2000);
+  }
+  _liveTimer = setTimeout(tick, 1500);
+}
+
+// ── FORMAT ────────────────────────────────────────────────────────
 function fmt(n) {
   n = parseInt(n)||0;
   if (n>=1e6) return (n/1e6).toFixed(1)+'M';
@@ -267,42 +307,7 @@ function fmt(n) {
   return n.toString();
 }
 
-// ══════════════════════════════════════════════════
-// ANIMATED LIVE REACH COUNTER — real base + fake increment
-// User ke liye engaging animated number dikhata hai
-// ══════════════════════════════════════════════════
-let _liveReachTimer = null;
-function startFakeLiveReach(realReach) {
-  if (_liveReachTimer) clearInterval(_liveReachTimer);
-
-  // Base: real reach ya minimum 1000 (believable starting point)
-  let current = Math.max(realReach, 1000);
-  const el = document.getElementById('reachNum');
-  if (!el) return;
-
-  // Pehle display karo
-  el.textContent = fmt(current) + '+';
-
-  // Har 2-4 seconds mein random 1-15 add karo
-  function tick() {
-    const increment = Math.floor(Math.random() * 15) + 1;
-    current += increment;
-    el.textContent = fmt(current) + '+';
-
-    // Flash animation
-    el.style.transition = 'color 0.3s';
-    el.style.color = '#ff9f43';
-    setTimeout(() => { el.style.color = ''; }, 400);
-
-    // Next tick random interval (2000-5000ms)
-    const nextIn = Math.floor(Math.random() * 3000) + 2000;
-    _liveReachTimer = setTimeout(tick, nextIn);
-  }
-
-  // Start after 1.5s delay
-  _liveReachTimer = setTimeout(tick, 1500);
-}
-
+// ── CHECKIN ───────────────────────────────────────────────────────
 async function doCheckin() {
   const btn = document.getElementById('checkinBtn');
   btn.disabled = true; btn.textContent = '⏳ Loading...';
@@ -317,7 +322,7 @@ async function doCheckin() {
       const dots = document.querySelectorAll('#dayDots .dot');
       dots.forEach((d,i) => {
         d.classList.remove('done','today');
-        if (i < s-1) d.classList.add('done');
+        if (i < s-1)      d.classList.add('done');
         else if (i === s-1) d.classList.add('today');
       });
       document.getElementById('userSub').textContent = `Streak: ${s} 🔥 | Reach: ${fmt(userData?.reach||0)}`;
@@ -336,6 +341,7 @@ async function doCheckin() {
   }
 }
 
+// ── REFERRAL ──────────────────────────────────────────────────────
 function copyRefLink() {
   const link = document.getElementById('refLink').textContent;
   if (!link || link==='Loading...') return showToast('⚠️ Link load ho rahi hai...');
@@ -347,7 +353,7 @@ function copyRefLink() {
       r.selectNodeContents(el);
       window.getSelection()?.removeAllRanges();
       window.getSelection()?.addRange(r);
-      showToast('✅ Select ho gaya! Copy karo (Ctrl+C)');
+      showToast('✅ Select ho gaya! Copy karo');
     });
   tg?.HapticFeedback?.selectionChanged();
 }
@@ -359,50 +365,90 @@ function shareRefLink() {
   tg?.openTelegramLink?.(url) || window.open(url,'_blank');
 }
 
-async function doSearch() {
-  const q = document.getElementById('searchInput').value.trim();
-  if (!q) return;
+// ── POST CARD RENDERER ────────────────────────────────────────────
+function renderPostCard(ad) {
+  const caption  = (ad.caption || '').trim();
+  const tags     = (ad.hashtags || ad.tags || []).map(t => '#'+t).join(' ');
+  const reach    = fmt(ad.reach || 0);
+  const likes    = ad.likes || 0;
+  const btnRows  = ad.buttons || [];
+
+  let btnHtml = '';
+  btnRows.forEach(row => {
+    if (!row || !row.length) return;
+    btnHtml += `<div class="post-btns-row">`;
+    row.forEach(b => {
+      if (b && b.url && b.text) {
+        btnHtml += `<a class="post-btn" href="${esc(b.url)}" target="_blank">${esc(b.text)}</a>`;
+      }
+    });
+    btnHtml += `</div>`;
+  });
+
+  return `
+    <div class="post-card">
+      ${caption ? `<div class="post-caption">${esc(caption)}</div>` : ''}
+      ${tags    ? `<div class="post-tags">${esc(tags)}</div>`       : ''}
+      <div class="post-meta">
+        <span>👁 ${reach} reach</span>
+        <span>❤️ ${likes} likes</span>
+      </div>
+      ${btnHtml}
+    </div>`;
+}
+
+// ── LATEST POSTS — search page default ───────────────────────────
+async function loadLatestPosts() {
   const el = document.getElementById('searchResults');
-  el.innerHTML = '<div class="skeleton" style="height:90px;margin-bottom:10px"></div>'.repeat(3);
+  if (!el) return;
+  try {
+    const r   = await fetch('/api/latest_ads?limit=10');
+    const res = await r.json();
+    const list = res.results || [];
+    if (!list.length) {
+      el.innerHTML = `<div class="empty-state"><div class="icon">📭</div><div>Abhi koi post nahi hai</div></div>`;
+      return;
+    }
+    document.getElementById('searchLabel').textContent = `📢 Latest Posts (${list.length})`;
+    el.innerHTML = list.map(renderPostCard).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="empty-state"><div>❌ Posts load nahi hue</div></div>`;
+  }
+}
+
+// ── SEARCH ────────────────────────────────────────────────────────
+async function doSearch() {
+  const q  = document.getElementById('searchInput').value.trim();
+  const el = document.getElementById('searchResults');
+  const lb = document.getElementById('searchLabel');
+
+  if (!q) {
+    // Empty search — latest posts
+    lb.textContent = '📢 Latest Posts';
+    el.innerHTML   = '<div class="skeleton" style="height:120px;margin-bottom:10px"></div>'.repeat(3);
+    await loadLatestPosts();
+    return;
+  }
+
+  lb.textContent = `🔍 "${q}" ke results`;
+  el.innerHTML   = '<div class="skeleton" style="height:120px;margin-bottom:10px"></div>'.repeat(3);
+
   try {
     const r    = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
     const res  = await r.json();
-    const list = res.results || res.data || [];
+    const list = res.results || [];
     if (!list.length) {
       el.innerHTML = `<div class="empty-state"><div class="icon">😕</div><div>'${esc(q)}' ke liye koi result nahi</div></div>`;
       return;
     }
-    el.innerHTML = list.map(ad => {
-      const caption  = (ad.caption || '').trim();
-      const tags     = (ad.tags || ad.hashtags || []).map(t => '#' + t).join(' ');
-      const reach    = fmt(ad.reach || 0);
-      const likes    = ad.likes || 0;
-      // buttons: [[{text,url},...],...]
-      const btnRows  = ad.buttons || [];
-      let btnHtml    = '';
-      btnRows.forEach(row => {
-        btnHtml += `<div class="post-btns" style="margin-bottom:6px">`;
-        row.forEach(b => {
-          btnHtml += `<a class="post-btn" href="${esc(b.url)}" target="_blank">${esc(b.text)}</a>`;
-        });
-        btnHtml += `</div>`;
-      });
-      return `
-        <div class="post-card">
-          ${caption ? `<div class="post-caption">${esc(caption)}</div>` : ''}
-          ${tags    ? `<div class="post-tags">${esc(tags)}</div>` : ''}
-          <div class="post-meta">
-            <span>👁️ ${reach} reach</span>
-            <span>❤️ ${likes} likes</span>
-          </div>
-          ${btnHtml || ''}
-        </div>`;
-    }).join('');
+    lb.textContent  = `🔍 "${q}" — ${list.length} result`;
+    el.innerHTML    = list.map(renderPostCard).join('');
   } catch(e) {
     el.innerHTML = '<div class="empty-state"><div>❌ Error, dobara try karo</div></div>';
   }
 }
 
+// ── MY ADS ────────────────────────────────────────────────────────
 async function loadMyAds() {
   try {
     const r   = await fetch('/api/my_ads', { headers });
@@ -421,21 +467,35 @@ function renderMyAds() {
     return;
   }
   el.innerHTML = myAdsData.map(ad => {
-    const id     = ad.id || ad.ad_id || '';
-    const status = ad.status || 'pending';
-    const tags   = (ad.hashtags||[]).map(t=>'#'+t).join(' ');
-    const link   = ad.link || '';
+    const id      = ad.id || ad.ad_id || '';
+    const status  = ad.status || 'pending';
+    const tags    = (ad.hashtags||[]).map(t=>'#'+t).join(' ');
+    const caption = (ad.caption || '').trim();
+    const btnRows = ad.buttons || [];
+
+    let btnHtml = '';
+    btnRows.forEach(row => {
+      if (!row || !row.length) return;
+      btnHtml += `<div class="post-btns-row">`;
+      row.forEach(b => {
+        if (b && b.url && b.text)
+          btnHtml += `<a class="post-btn" href="${esc(b.url)}" target="_blank">${esc(b.text)}</a>`;
+      });
+      btnHtml += `</div>`;
+    });
+
     return `
       <div class="ad-card ${status}" id="adcard-${esc(id)}">
         <span class="ad-status status-${status}">${statusLabel(status)}</span>
-        <div class="ad-caption">${esc((ad.caption||'').slice(0,100))||'(No caption)'}</div>
+        ${caption ? `<div class="ad-caption">${esc(caption.slice(0,150))}</div>` : ''}
         <div class="ad-meta">
           <span>👁️ ${fmt(ad.reach||0)} reach</span>
+          <span>❤️ ${ad.likes||0} likes</span>
           <span>🏷️ ${esc(tags)||'No tags'}</span>
         </div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          ${link?`<a href="${link}" target="_blank" class="btn btn-secondary" style="flex:1;font-size:12px;padding:8px;text-decoration:none">📌 Post Dekho</a>`:''}
-          <button class="btn btn-danger" style="flex:1;font-size:12px;padding:8px" onclick="deleteAd('${esc(id)}')">🗑️ Delete</button>
+        ${btnHtml}
+        <div class="post-actions">
+          <button class="btn btn-danger" style="font-size:13px;padding:10px" onclick="deleteAd('${esc(id)}')">🗑️ Delete</button>
         </div>
       </div>`;
   }).join('');
@@ -459,19 +519,21 @@ async function deleteAd(adId) {
   } catch(e) { showToast('❌ Error aaya'); }
 }
 
+// ── TAB SWITCH ────────────────────────────────────────────────────
 function switchTab(name, el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   el.classList.add('active');
   tg?.HapticFeedback?.selectionChanged();
-  if (name==='myads') loadMyAds();
+  if (name==='myads')  loadMyAds();
+  if (name==='search') loadLatestPosts();
 }
 
 function openCreateAd() {
   const u = window.__botUsername || userData?.bot_username || '';
   if (!u) return showToast('⚠️ Bot se /createad type karo');
-  const url = `https://t.me/${u}?start=create_ad`;
+  const url = `https://t.me/${u}`;
   tg?.openTelegramLink?.(url) || window.open(url,'_blank');
 }
 
@@ -488,4 +550,4 @@ function esc(s='') {
 init();
 </script>
 </body>
-  </html>
+</html>
