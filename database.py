@@ -5,6 +5,8 @@
 # ╚══════════════════════════════════════════════════════════════════╝
 
 import os
+import random
+import string
 from datetime import datetime, timedelta, timezone
 from pymongo import MongoClient, DESCENDING
 from pymongo.errors import DuplicateKeyError
@@ -22,16 +24,19 @@ queue_col      = db["queue"]
 forcesub_col   = db["forcesub_channels"]
 sessions_col   = db["ad_sessions"]
 reports_col    = db["reports"]
-likes_col      = db["likes"]          # like/unlike tracking
+likes_col      = db["likes"]
+redeem_col     = db["redeem_codes"]   # NEW: redeem codes
 
 # ─── Indexes ───────────────────────────────────────────────────────
 users_col.create_index("user_id", unique=True)
 ads_col.create_index([("hashtags", 1)])
 ads_col.create_index([("owner_id", 1)])
 ads_col.create_index([("status", 1)])
+ads_col.create_index([("created_at", DESCENDING)])
 ads_col.create_index([("round1_sent_at", 1)])
 forcesub_col.create_index("channel_id", unique=True)
 likes_col.create_index([("ad_id", 1), ("user_id", 1)], unique=True)
+redeem_col.create_index("code", unique=True)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -85,7 +90,6 @@ def get_user_stats() -> dict:
 # ─── Streak ────────────────────────────────────────────────────────
 
 def daily_checkin(user_id: int) -> dict:
-    """Alias for do_checkin — used by Flask API."""
     return do_checkin(user_id)
 
 
@@ -178,9 +182,9 @@ def create_ad(owner_id: int, data: dict) -> str:
         "db_channel_msg_id": data.get("db_channel_msg_id"),
         "status":            "pending",
         "approved_at":       None,
-        "posted_count":      0,           # 0 = not sent, 1 = round1 done, 2 = both done
-        "round1_sent_at":    None,        # timestamp when round 1 completed
-        "round2_sent_at":    None,        # timestamp when round 2 completed
+        "posted_count":      0,
+        "round1_sent_at":    None,
+        "round2_sent_at":    None,
         "reach":             0,
         "likes":             0,
         "is_copyright":      False,
@@ -204,7 +208,6 @@ def approve_ad(ad_id: str):
         {"_id": ObjectId(ad_id)},
         {"$set": {"status": "approved", "approved_at": datetime.now(timezone.utc)}}
     )
-    # Push to queue for round 1
     queue_col.insert_one({
         "ad_id":     ad_id,
         "round":     1,
@@ -236,15 +239,21 @@ def get_user_ads(owner_id: int) -> list:
 
 
 def get_all_browseable_ads() -> list:
-    """Get all approved ads for browse feature — sorted newest first."""
     return list(ads_col.find(
         {"status": {"$in": ["approved", "completed"]}},
         sort=[("approved_at", DESCENDING)]
     ))
 
 
+def get_latest_ads(limit: int = 10) -> list:
+    """Latest approved ads — mini app search page ke liye."""
+    return list(ads_col.find(
+        {"status": {"$in": ["approved", "completed"]}},
+        sort=[("approved_at", DESCENDING)]
+    ).limit(limit))
+
+
 def get_next_queued_ad() -> dict | None:
-    """Pop oldest ad from queue, return full ad doc."""
     item = queue_col.find_one_and_delete({}, sort=[("queued_at", 1)])
     if not item:
         return None
@@ -255,10 +264,8 @@ def get_next_queued_ad() -> dict | None:
 
 
 def queue_round2_ads():
-    """Queue all ads that completed round1 at least 24 hours ago for round 2."""
     from bson import ObjectId
     cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
-    # Find ads: approved, round 1 done (posted_count=1), round1_sent_at > 24h ago
     eligible = list(ads_col.find({
         "status":         "approved",
         "posted_count":   1,
@@ -278,8 +285,9 @@ def queue_round2_ads():
     return count
 
 
-def search_ads(query: str, limit: int = 5) -> list:
+def search_ads(query: str, limit: int = 10) -> list:
     q = query.lower().strip()
+    # Full projection — buttons bhi chahiye
     return list(ads_col.find(
         {
             "status": {"$in": ["approved", "completed"]},
@@ -287,9 +295,9 @@ def search_ads(query: str, limit: int = 5) -> list:
                 {"hashtags": {"$in": [q]}},
                 {"caption": {"$regex": q, "$options": "i"}},
             ]
-        },
-        {"_id": 1, "caption": 1, "hashtags": 1, "db_channel_msg_id": 1, "owner_id": 1}
-    ).limit(limit))
+        }
+        # No projection — sab fields aayenge (buttons included)
+    ).sort("approved_at", DESCENDING).limit(limit))
 
 
 def increment_ad_reach(ad_id: str, count: int = 1, round_num: int = 1):
@@ -308,17 +316,14 @@ def increment_ad_reach(ad_id: str, count: int = 1, round_num: int = 1):
 # ═══════════════════════════════════════════════════════════════════
 
 def toggle_like(ad_id: str, user_id: int) -> dict:
-    """Toggle like. Returns {liked: bool, total_likes: int}"""
     from bson import ObjectId
     existing = likes_col.find_one({"ad_id": ad_id, "user_id": user_id})
     if existing:
-        # Unlike
         likes_col.delete_one({"ad_id": ad_id, "user_id": user_id})
         ads_col.update_one({"_id": ObjectId(ad_id)}, {"$inc": {"likes": -1}})
         ad = get_ad(ad_id)
         return {"liked": False, "total_likes": max(ad.get("likes", 0), 0)}
     else:
-        # Like
         try:
             likes_col.insert_one({
                 "ad_id":    ad_id,
@@ -379,3 +384,84 @@ def add_report(reporter_id: int, ad_id: str, reason: str = "copyright"):
 
 def get_pending_reports() -> list:
     return list(reports_col.find({"resolved": False}))
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  REDEEM CODES  ← NEW
+# ═══════════════════════════════════════════════════════════════════
+
+def generate_redeem_code(created_by: int, max_uses: int = 1) -> str:
+    """
+    Unique redeem code generate karo.
+    Format: ADMS-XXXXXX (6 random uppercase chars)
+    max_uses: kitne log use kar sakte hain (default 1)
+    """
+    while True:
+        suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        code   = f"ADMS-{suffix}"
+        try:
+            redeem_col.insert_one({
+                "code":       code,
+                "created_by": created_by,
+                "max_uses":   max_uses,
+                "used_count": 0,
+                "used_by":    [],
+                "created_at": datetime.now(timezone.utc),
+                "is_active":  True,
+            })
+            return code
+        except DuplicateKeyError:
+            continue  # Collision — retry
+
+
+def redeem_code(code: str, user_id: int) -> dict:
+    """
+    User redeem code use kare.
+    Returns: {success, message, free_ads_given}
+    """
+    code = code.strip().upper()
+    doc  = redeem_col.find_one({"code": code})
+
+    if not doc:
+        return {"success": False, "message": "❌ Code galat hai ya exist nahi karta!"}
+
+    if not doc.get("is_active", True):
+        return {"success": False, "message": "❌ Yeh code already deactivate ho chuka hai!"}
+
+    if user_id in (doc.get("used_by") or []):
+        return {"success": False, "message": "❌ Tumne pehle hi yeh code use kar liya hai!"}
+
+    if doc.get("used_count", 0) >= doc.get("max_uses", 1):
+        return {"success": False, "message": "❌ Yeh code ki limit khatam ho gayi!"}
+
+    # Mark as used
+    redeem_col.update_one(
+        {"code": code},
+        {
+            "$inc": {"used_count": 1},
+            "$push": {"used_by": user_id},
+        }
+    )
+
+    # Max uses reach ho gayi — deactivate
+    new_count = doc.get("used_count", 0) + 1
+    if new_count >= doc.get("max_uses", 1):
+        redeem_col.update_one({"code": code}, {"$set": {"is_active": False}})
+
+    # User ko 1 free ad do
+    users_col.update_one({"user_id": user_id}, {"$inc": {"free_ads_earned": 1}})
+
+    return {
+        "success":       True,
+        "message":       "🎉 Code redeem ho gaya! 1 Free Ad tumhare account mein add ho gaya!",
+        "free_ads_given": 1,
+    }
+
+
+def get_all_redeem_codes() -> list:
+    return list(redeem_col.find({}, sort=[("created_at", DESCENDING)]))
+
+
+def deactivate_redeem_code(code: str) -> bool:
+    res = redeem_col.update_one({"code": code}, {"$set": {"is_active": False}})
+    return res.modified_count > 0
