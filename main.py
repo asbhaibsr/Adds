@@ -734,15 +734,100 @@ async def handle_ad_creation(client: Client, message: Message):
             return await message.reply("URL https:// se shuru hona chahiye!")
         existing = db.get_ad_session(uid)
         buttons  = existing.get("buttons", []) if existing else []
-        if sum(len(r) for r in buttons) >= 3:
+        total_btns = sum(len(r) for r in buttons)
+        if total_btns >= 3:
             return await message.reply("Max 3 buttons add kar sakte ho!")
-        buttons.append([{"text": btn_txt, "url": btn_url}])
-        db.save_ad_session(uid, {"step": "buttons", "buttons": buttons})
-        await message.reply(f"✅ Button add ho gaya: <b>{btn_txt}</b>", parse_mode=enums.ParseMode.HTML)
-        await _show_button_step(client, uid, buttons)
 
-    elif step in ("buttons", "ready"):
+        new_btn = {"text": btn_txt, "url": btn_url}
+
+        # Agar pehle se koi button hai — puchho: side mein ya neeche?
+        if total_btns >= 1:
+            # Last row mein sirf 1 button ho to side mein add kar sakte hain (max 2 per row)
+            last_row = buttons[-1] if buttons else []
+            can_side = len(last_row) < 2
+
+            # Session mein pending button store karo
+            db.save_ad_session(uid, {"step": "button_placement", "pending_btn": new_btn})
+
+            placement_kb_rows = []
+            if can_side:
+                placement_kb_rows.append([
+                    InlineKeyboardButton(
+                        f"◀▶ Side Mein (Pichle wale ke saath)",
+                        callback_data="btn_place_side"
+                    )
+                ])
+            placement_kb_rows.append([
+                InlineKeyboardButton(
+                    "⬇ Neeche Naye Row Mein",
+                    callback_data="btn_place_below"
+                )
+            ])
+            placement_kb_rows.append([InlineKeyboardButton("❌ Cancel", callback_data="cancel_ad")])
+
+            await message.reply(
+                f"✅ Button ready: <b>{btn_txt}</b>\n\n"
+                "🔲 Yeh button kahan rakhein?",
+                reply_markup=InlineKeyboardMarkup(placement_kb_rows),
+                parse_mode=enums.ParseMode.HTML
+            )
+        else:
+            # Pehla button — seedha add karo
+            buttons.append([new_btn])
+            db.save_ad_session(uid, {"step": "buttons", "buttons": buttons})
+            await message.reply(f"✅ Button add ho gaya: <b>{btn_txt}</b>", parse_mode=enums.ParseMode.HTML)
+            await _show_button_step(client, uid, buttons)
+
+    elif step in ("buttons", "ready", "button_placement"):
         pass
+
+
+# ── BUTTON PLACEMENT CALLBACKS ──
+@app.on_callback_query(filters.regex("^btn_place_side$"))
+async def cb_btn_place_side(client: Client, cq: CallbackQuery):
+    """Pending button ko last row mein side mein add karo."""
+    uid     = cq.from_user.id
+    session = db.get_ad_session(uid)
+    if not session or not session.get("pending_btn"):
+        return await cq.answer("Session expire ho gaya!", show_alert=True)
+
+    buttons    = session.get("buttons", [])
+    new_btn    = session["pending_btn"]
+    last_row   = buttons[-1] if buttons else []
+
+    if last_row and len(last_row) < 2:
+        buttons[-1].append(new_btn)
+    else:
+        buttons.append([new_btn])
+
+    db.save_ad_session(uid, {"step": "buttons", "buttons": buttons, "pending_btn": None})
+    try:
+        await cq.message.delete()
+    except Exception:
+        pass
+    await cq.answer("Side mein add ho gaya! ✅")
+    await _show_button_step(client, uid, buttons)
+
+
+@app.on_callback_query(filters.regex("^btn_place_below$"))
+async def cb_btn_place_below(client: Client, cq: CallbackQuery):
+    """Pending button ko naye row mein neeche add karo."""
+    uid     = cq.from_user.id
+    session = db.get_ad_session(uid)
+    if not session or not session.get("pending_btn"):
+        return await cq.answer("Session expire ho gaya!", show_alert=True)
+
+    buttons = session.get("buttons", [])
+    new_btn = session["pending_btn"]
+    buttons.append([new_btn])
+
+    db.save_ad_session(uid, {"step": "buttons", "buttons": buttons, "pending_btn": None})
+    try:
+        await cq.message.delete()
+    except Exception:
+        pass
+    await cq.answer("Neeche add ho gaya! ✅")
+    await _show_button_step(client, uid, buttons)
 
 
 async def _show_button_step(client: Client, uid: int, buttons: list):
@@ -1505,11 +1590,12 @@ async def cb_view_mypost(client: Client, cq: CallbackQuery):
     ad    = db.get_ad(ad_id)
     if not ad or ad.get("owner_id") != uid:
         return await cq.answer("Ad nahi mila!", show_alert=True)
-    await cq.answer("Post bhej raha hoon...")
+    await cq.answer("📨 Post PM mein bhej raha hoon...")
+    # FIXED: Seedha PM mein bhejo — channel link nahi dena
     try:
         await send_ad_to_user_with_controls(client, uid, ad)
     except Exception as e:
-        await client.send_message(uid, f"Error: {e}")
+        await client.send_message(uid, f"❌ Post load nahi ho saka: {e}")
 
 
 async def send_ad_to_user_with_controls(client: Client, uid: int, ad: dict):
