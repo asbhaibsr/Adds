@@ -250,10 +250,12 @@ def api_search():
         msg_id = ad.get("db_channel_msg_id")
         safe.append({
             "ad_id":    str(ad.get("_id", "")),
-            "caption":  (ad.get("caption") or "")[:200],
+            "caption":  (ad.get("caption") or ""),
             "hashtags": ad.get("hashtags", []),
             "tags":     ad.get("hashtags", []),
-            "link":     f"https://t.me/c/{ch_str}/{msg_id}" if msg_id else "",
+            "buttons":  ad.get("buttons", []),
+            "reach":    ad.get("reach", 0),
+            "likes":    ad.get("likes", 0),
         })
     return jsonify({"results": safe})
 
