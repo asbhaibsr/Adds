@@ -9,19 +9,13 @@
 [![License](https://img.shields.io/badge/License-MIT%20%2B%20Attribution-orange?style=for-the-badge)](LICENSE)
 [![Author](https://img.shields.io/badge/Author-%40asbhaibsr-red?style=for-the-badge&logo=telegram)](https://t.me/asbhaibsr)
 
-<br/>
-
 ![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=500&color=FF6B35&center=true&vCenter=true&multiline=true&width=600&height=100&lines=Telegram+Ad+Broadcasting+Bot;50%2C000+Users+Reach+—+FREE!;Made+with+❤️+by+@asbhaibsr)
 
 </div>
 
 ---
 
-<div align="center">
-
 ## ✨ Features
-
-</div>
 
 <table>
 <tr>
@@ -39,8 +33,8 @@
 ### 🎯 Smart Earning System
 - **Daily Streak**: 7 din = 1 Free Ad
 - **Referral System**: 10 refers = 1 Free Ad
+- **Redeem Codes**: Owner special codes generate kare
 - Like / Unlike posts
-- Browse posts with navigation
 
 </td>
 </tr>
@@ -49,17 +43,17 @@
 
 ### 🛡️ Admin Controls
 - Approve / Reject / Copyright flag
-- Force-Subscribe channels
+- Force-Subscribe (normal + request channels)
+- Redeem code generate karo
 - Manual broadcast trigger
-- Auto-delete copyright posts
 
 </td>
 <td width="50%">
 
 ### 📊 Mini App Dashboard
-- Live reach counter
+- Animated live reach counter
 - Streak tracker with animation
-- Referral stats & link
+- Latest posts & search with buttons
 - My Ads management
 
 </td>
@@ -99,7 +93,7 @@ WEBAPP_URL=https://your-app.koyeb.app
 POST_INTERVAL_MINUTES=30
 ROUND2_AFTER_HOURS=24
 COPYRIGHT_DELETE_MINUTES=7
-ADMIN_SECRET=your_dashboard_password
+ADMIN_SECRET=your_dashboard_password   ← Yahi admin panel ka password hai
 MEGA_BROADCAST_TIMES=09:00,21:00
 ```
 
@@ -120,63 +114,152 @@ python run.py
 
 ---
 
+## 🔐 Admin Dashboard Password
+
+Browser se `https://your-app.koyeb.app/admin_panel` kholo.
+
+Password = `.env` mein jo **`ADMIN_SECRET`** set kiya hai — wahi daalo.
+
+> **Default (agar set nahi kiya):** koi bhi value kaam karegi — isliye `.env` mein zaroor set karo.
+
+---
+
 ## 📁 File Structure
 
 ```
 Adds/
-├── main.py           Bot handlers & commands
-├── database.py       MongoDB operations
-├── scheduler.py      Background jobs & broadcasting
-├── app.py            Flask API & Mini App backend
-├── run.py            Entry point
-├── requirements.txt  Dependencies
-├── koyeb.yaml        Koyeb config
+├── main.py              Bot handlers & commands
+├── database.py          MongoDB operations
+├── scheduler.py         Background jobs & broadcasting
+├── app.py               Flask API & Mini App backend
+├── run.py               Entry point
+├── requirements.txt     Dependencies
+├── koyeb.yaml           Koyeb config
 ├── templates/
-│   ├── index.html    User Dashboard
-│   └── admin.html    Admin Panel
+│   ├── index.html       User Dashboard (Mini App)
+│   └── admin.html       Admin Panel
 └── utils/
-    ├── broadcaster.py  Ad sending
-    └── forcesub.py     Force subscribe
+    ├── broadcaster.py   Ad sending logic
+    └── forcesub.py      Force subscribe (normal + request channels)
 ```
 
 ---
 
-## 🎮 Commands
+## 🎮 Bot Commands — Puri List
 
-| Command | Description | Access |
-|---------|-------------|--------|
-| `/start` | Bot shuru karo | Everyone |
-| `/createad` | Naya ad banao | Everyone |
-| `/myposts` | Apni posts dekho | Everyone |
-| `/search keyword` | Posts search | Everyone |
-| `/done` | Ad finalize | Everyone |
-| `/stats` | Bot statistics | Owner |
-| `/broadcast` | Manual broadcast | Owner |
-| `/addforcesub -100xxx` | Force sub add | Owner |
-| `/removefchannel -100xxx` | Force sub remove | Owner |
-| `/deletead id` | Ad delete | Owner |
-| `/admin` | Admin panel | Owner |
+### 👥 User Commands
+```
+/start              — Bot shuru karo / main menu
+/createad           — Naya ad banao
+/myposts            — Apni saari posts dekho
+/search <keyword>   — Posts search karo
+/done               — Ad session finalize karo
+```
+
+**Redeem Code:**
+```
+#redeem ADMS-XXXXXX — Redeem code lagao → 1 Free Ad milega
+```
+
+> Copy karke BotFather mein paste karo 👇
+
+```
+start - Bot shuru karo / main menu
+createad - Naya ad banao
+myposts - Apni saari posts dekho
+search - Posts search karo
+done - Ad session finalize karo
+```
+
+---
+
+### 🛡️ Owner / Admin Commands
+
+```
+/admin              — Admin panel + redeem button
+/stats              — Bot statistics (users, active, blocked)
+/broadcast          — Manual mega-broadcast trigger
+/send_broadcast     — Custom message sabko bhejo
+/cancel_broadcast   — Broadcast cancel karo
+/addforcesub -100xx — Force-sub channel add karo
+/removefchannel     — Force-sub channel hatao
+/deletead <ad_id>   — Koi bhi ad delete karo
+/gencode            — 1-use redeem code generate karo
+/gencode 3          — 3-use redeem code generate karo
+```
+
+> Copy karke BotFather mein paste karo 👇
+
+```
+admin - Admin panel kholo
+stats - Bot statistics dekho
+broadcast - Manual broadcast trigger
+send_broadcast - Custom message bhejo
+cancel_broadcast - Broadcast cancel karo
+addforcesub - Force-sub channel add karo
+removefchannel - Force-sub channel hatao
+deletead - Ad delete karo
+gencode - Redeem code generate karo
+```
+
+---
+
+## 🎟️ Redeem Code System
+
+**Owner kaise code banaye:**
+- Bot mein `/admin` → **🎟 Redeem Code Generate Karo** button dabao
+- Ya `/gencode` — ek use wala code
+- Ya `/gencode 5` — 5 users use kar sakein aise code
+
+**Code format:** `ADMS-ABC123`
+
+**User kaise use kare:**
+```
+#redeem ADMS-ABC123
+```
+Bot PM mein likho → 1 Free Ad turant account mein add!
+
+**Rules:**
+- Ek user ek code sirf **1 baar** use kar sakta hai
+- Code limit khatam hone pe automatically deactivate
+- Owner channel pe code post kare, users redeem karein
 
 ---
 
 ## 🔄 2-Round Broadcast System
 
 ```
-Approval
-   |
-   v
-Round 1 (Aaj — Turant)
-   |  Sabhi current users ko jaata hai
-   |
+Ad Approved
+    │
+    ▼
+Round 1 — Turant
+    │  Sabhi current users ko jaata hai
+    │
 24 ghante baad...
-   |
-   v
-Round 2 (Agle Din)
-   |  Naaye users bhi cover hote hain
-   |
-   v
+    │
+    ▼
+Round 2 — Agle Din
+    │  Naaye users bhi cover hote hain
+    │
+    ▼
 Completed — Archive
 ```
+
+---
+
+## 📌 Force Subscribe
+
+**Normal public channel:**
+```
+/addforcesub -100xxxxxxxxxx
+```
+
+**Request/Private channel:**
+```
+/addforcesub -100xxxxxxxxxx
+```
+Bot automatically detect karta hai `t.me/+hash` link se ki request channel hai ya public.
+Dono ke liye alag-alag check hota hai.
 
 ---
 
@@ -184,11 +267,13 @@ Completed — Archive
 
 **DATABASE_CHANNEL** — Private channel banao, bot ko admin banao, ID daalo. Sab ads yahan store hote hain.
 
+**ADMIN_SECRET** — `.env` mein strong password rakho. Yahi admin dashboard ka password hai. Browser se `your-app.koyeb.app/admin_panel` pe login hoga.
+
 **Redeploy** — Bot startup pe channel check karta hai. `Peer id invalid` aaye toh channel mein bot ko dobara admin banao.
 
-**UptimeRobot** — `https://your-app.koyeb.app/health` add karo monitoring mein. Self-ping bhi built-in hai.
+**UptimeRobot** — `https://your-app.koyeb.app/health` add karo free monitoring ke liye.
 
-**Admin Dashboard** — Browser se `https://your-app.koyeb.app/admin_panel` kholo, `ADMIN_SECRET` password daalo.
+**Force Sub Request Channel** — Bot ko channel ka admin banao with **"Manage Members"** permission — tabhi join requests check ho sakenge.
 
 ---
 
@@ -198,7 +283,7 @@ Completed — Archive
 MIT License with Attribution Requirement
 Copyright (c) 2025 @asbhaibsr
 
-Allowed  : Use, modify, deploy
+Allowed     : Use, modify, deploy
 Not Allowed : Remove @asbhaibsr credit, resell without permission
 ```
 
