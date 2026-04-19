@@ -608,7 +608,9 @@ async def cb_skip_hashtags(client: Client, cq: CallbackQuery):
     & (filters.photo | filters.video | filters.animation | filters.text)
     & ~filters.command(["start","search","addforcesub","removefchannel",
                         "createad","stats","broadcast","deletead","done",
-                        "myposts","preview","admin","send_broadcast","cancel_broadcast"])
+                        "myposts","preview","admin","send_broadcast","cancel_broadcast",
+                        "gencode"])
+    & ~filters.regex(r"^#redeem\s+\S+")
 )
 async def handle_ad_creation(client: Client, message: Message):
     uid     = message.from_user.id
@@ -1449,10 +1451,78 @@ async def cmd_admin(client: Client, message: Message):
         f"Reports: {reports}\n\n"
         f"Panel Password: <code>{password}</code>\n\n"
         "/stats  /broadcast  /send_broadcast\n"
-        "/addforcesub  /removefchannel  /deletead",
+        "/addforcesub  /removefchannel  /deletead\n"
+        "/gencode — Redeem code generate karo",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🖥 Dashboard",  url=f"{WEBAPP_URL}/admin_panel"),
-             InlineKeyboardButton("📡 Broadcast", callback_data="admin_broadcast")],
+            [InlineKeyboardButton("🖥 Dashboard",     url=f"{WEBAPP_URL}/admin_panel"),
+             InlineKeyboardButton("📡 Broadcast",     callback_data="admin_broadcast")],
+            [InlineKeyboardButton("🎟 Redeem Code Generate Karo", callback_data="admin_gen_redeem")],
+        ]),
+        parse_mode=enums.ParseMode.HTML
+    )
+
+
+@app.on_callback_query(filters.regex("^admin_gen_redeem$"))
+async def cb_admin_gen_redeem(client: Client, cq: CallbackQuery):
+    """Owner callback se redeem code generate kare."""
+    if not is_owner(cq.from_user.id):
+        return await cq.answer("Sirf owner!", show_alert=True)
+    code = db.generate_redeem_code(OWNER_ID, max_uses=1)
+    await cq.answer("Code generate ho gaya!", show_alert=False)
+    await client.send_message(
+        cq.from_user.id,
+        f"🎟 <b>Naya Redeem Code Ready!</b>\n\n"
+        f"Code: <code>{code}</code>\n\n"
+        f"Limit: <b>1 user</b>\n"
+        f"Value: <b>1 Free Ad</b>\n\n"
+        f"Is code ko channel pe post karo!\n"
+        f"User bot mein <code>#redeem {code}</code> likhega.",
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("📋 Code Copy", switch_inline_query=code)],
+        ])
+    )
+
+
+@app.on_message(filters.command("gencode") & filters.private)
+async def cmd_gencode(client: Client, message: Message):
+    """Owner /gencode [max_uses] se code generate kare."""
+    if not is_owner(message.from_user.id):
+        return
+    args     = message.command[1:]
+    max_uses = 1
+    try:
+        if args:
+            max_uses = max(1, int(args[0]))
+    except ValueError:
+        pass
+    code = db.generate_redeem_code(message.from_user.id, max_uses=max_uses)
+    await message.reply(
+        f"🎟 <b>Redeem Code Generate Ho Gaya!</b>\n\n"
+        f"Code: <code>{code}</code>\n"
+        f"Max Uses: <b>{max_uses}</b>\n"
+        f"Value: <b>1 Free Ad per use</b>\n\n"
+        f"User <code>#redeem {code}</code> bot mein likhe.",
+        parse_mode=enums.ParseMode.HTML
+    )
+
+
+@app.on_message(filters.regex(r"^#redeem\s+(\S+)") & filters.private)
+async def cmd_redeem_hashtag(client: Client, message: Message):
+    """User #redeem CODE likhke code redeem kare."""
+    uid  = message.from_user.id
+    code = message.matches[0].group(1).strip()
+
+    if not await force_sub_gate(client, uid):
+        return
+
+    result = db.redeem_code(code, uid)
+    emoji  = "🎉" if result["success"] else "❌"
+    await message.reply(
+        f"{emoji} <b>{'Redeem Successful!' if result['success'] else 'Redeem Failed!'}</b>\n\n"
+        f"{result['message']}",
+        reply_markup=kb_main_menu() if result["success"] else InlineKeyboardMarkup([
+            [InlineKeyboardButton("🏠 Menu", callback_data="back_to_menu")]
         ]),
         parse_mode=enums.ParseMode.HTML
     )
