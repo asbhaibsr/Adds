@@ -7,7 +7,7 @@ import os
 import asyncio
 import logging
 from dotenv import load_dotenv
-from pyrogram import Client, filters
+from pyrogram import Client, filters, enums
 from pyrogram.types import (
     Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton,
     InlineQuery, InlineQueryResultArticle, InputTextMessageContent, WebAppInfo,
@@ -96,7 +96,7 @@ async def force_sub_gate(client: Client, user_id: int) -> bool:
                 "1. Channel join karo\n"
                 "2. <b>Verify Karo</b> button dabao",
                 reply_markup=kb,
-                parse_mode="html"
+                parse_mode=enums.ParseMode.HTML
             )
         except Exception as e:
             log.error(f"Could not send force_sub message to {user_id}: {e}")
@@ -133,7 +133,7 @@ async def cmd_start(client: Client, message: Message):
                 f"Username: @{user.username or 'N/A'}\n"
                 f"User ID: <code>{user.id}</code>\n"
                 f"Total Users: <b>{total_users}</b>",
-                parse_mode="html"
+                parse_mode=enums.ParseMode.HTML
             )
         except Exception as e:
             log.warning(f"Log channel send failed: {e}")
@@ -150,7 +150,7 @@ async def cmd_start(client: Client, message: Message):
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton("📢 Abhi Ad Banao!", callback_data="start_create_ad")],
                     ]),
-                    parse_mode="html"
+                    parse_mode=enums.ParseMode.HTML
                 )
             except Exception:
                 pass
@@ -185,7 +185,7 @@ async def cmd_start(client: Client, message: Message):
         f"Streak: <b>{streak} din</b>  |  Referrals: <b>{refs}</b>  |  Free Ads: <b>{free_ads}</b>\n\n"
         "Neeche se option choose karo:",
         reply_markup=kb_main_menu(),
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
 
 
@@ -198,7 +198,7 @@ async def cb_check_sub(client: Client, cq: CallbackQuery):
             cq.from_user.id,
             "✅ <b>Verify Ho Gaya!</b>\n\nAb bot ka poora maza lo!",
             reply_markup=kb_main_menu(),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     else:
         await cq.answer(
@@ -222,7 +222,7 @@ async def cb_send_feedback(client: Client, cq: CallbackQuery):
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("❌ Cancel", callback_data="back_to_menu")
             ]]),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     except Exception:
         pass
@@ -251,7 +251,7 @@ async def cb_show_referral(client: Client, cq: CallbackQuery):
                 url=f"https://t.me/share/url?url={ref_link}&text=FREE+promotion+bot!")],
             [InlineKeyboardButton("🔙 Back", callback_data="back_to_menu")],
         ]),
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
     await cq.answer()
 
@@ -276,7 +276,7 @@ async def cb_show_help(client: Client, cq: CallbackQuery):
             [InlineKeyboardButton("📢 Ad Banao", callback_data="start_create_ad")],
             [InlineKeyboardButton("🔙 Back", callback_data="back_to_menu")],
         ]),
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
     await cq.answer()
 
@@ -290,7 +290,7 @@ async def cb_back_menu(client: Client, cq: CallbackQuery):
         await cq.message.edit_text(
             "🏠 <b>Main Menu</b>\n\nNeeche se choose karo:",
             reply_markup=kb_main_menu(),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     except Exception:
         pass
@@ -304,7 +304,7 @@ async def cb_cancel_ad(client: Client, cq: CallbackQuery):
         await cq.message.edit_text(
             "❌ <b>Ad Cancel Ho Gaya</b>\n\nJab chahein dobara banao!",
             reply_markup=kb_main_menu(),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     except Exception:
         pass
@@ -326,7 +326,7 @@ async def cmd_add_forcesub(client: Client, message: Message):
         return await message.reply(
             f"<b>Active Force-Sub Channels:</b>\n{ch_list}\n\n"
             "Add: /addforcesub -100xxxxxxxxxx",
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     try:
         ch_id = int(args[0])
@@ -350,7 +350,7 @@ async def cmd_add_forcesub(client: Client, message: Message):
             reply_markup=InlineKeyboardMarkup([[
                 InlineKeyboardButton("❌ Remove Karo", callback_data=f"remove_fsub_{ch_id}")
             ]]),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     else:
         await message.reply("Yeh channel pehle se add hai!")
@@ -364,7 +364,7 @@ async def cb_remove_fsub_quick(client: Client, cq: CallbackQuery):
     removed = db.remove_forcesub_channel(ch_id)
     if removed:
         try:
-            await cq.message.edit_text(f"✅ Channel <code>{ch_id}</code> hata diya!", parse_mode="html")
+            await cq.message.edit_text(f"✅ Channel <code>{ch_id}</code> hata diya!", parse_mode=enums.ParseMode.HTML)
         except Exception:
             pass
         await cq.answer("Removed!")
@@ -388,7 +388,7 @@ async def cmd_remove_forcesub(client: Client, message: Message):
                 [InlineKeyboardButton(f"❌ {c.get('title','?')}", callback_data=f"remove_fsub_{c['channel_id']}")]
                 for c in channels
             ]),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     try:
         ch_id   = int(args[0])
@@ -408,12 +408,12 @@ async def cmd_search(client: Client, message: Message):
     if not args:
         return await message.reply(
             "🔍 <b>Search</b>\n\nUsage: /search keyword\nExample: /search bollywood",
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     query   = " ".join(args)
     results = db.search_ads(query, limit=5)
     if not results:
-        return await message.reply(f"Koi result nahi mila: <b>{query}</b>", parse_mode="html")
+        return await message.reply(f"Koi result nahi mila: <b>{query}</b>", parse_mode=enums.ParseMode.HTML)
     buttons = []
     for i, ad in enumerate(results, 1):
         preview = (ad.get("caption", "") or "")[:40].strip()
@@ -422,7 +422,7 @@ async def cmd_search(client: Client, message: Message):
     await message.reply(
         f"🔍 <b>{len(results)} result mile:</b> {query}",
         reply_markup=InlineKeyboardMarkup(buttons),
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
 
 
@@ -512,12 +512,12 @@ async def cmd_create_ad(client, update):
         ])
         if is_cb:
             try:
-                await update.message.edit_text(msg, reply_markup=kb, parse_mode="html")
+                await update.message.edit_text(msg, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
             except Exception:
-                await client.send_message(uid, msg, reply_markup=kb, parse_mode="html")
+                await client.send_message(uid, msg, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
             await update.answer()
         else:
-            await update.reply(msg, reply_markup=kb, parse_mode="html")
+            await update.reply(msg, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
         return
 
     if ads_posted >= 1 and free_ads <= 0:
@@ -532,12 +532,12 @@ async def cmd_create_ad(client, update):
         ])
         if is_cb:
             try:
-                await update.message.edit_text(msg, reply_markup=kb, parse_mode="html")
+                await update.message.edit_text(msg, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
             except Exception:
-                await client.send_message(uid, msg, reply_markup=kb, parse_mode="html")
+                await client.send_message(uid, msg, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
             await update.answer()
         else:
-            await update.reply(msg, reply_markup=kb, parse_mode="html")
+            await update.reply(msg, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
         return
 
     db.save_ad_session(uid, {"step": "media"})
@@ -556,12 +556,12 @@ async def cmd_create_ad(client, update):
     ])
     if is_cb:
         try:
-            await update.message.edit_text(text, reply_markup=kb, parse_mode="html")
+            await update.message.edit_text(text, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
         except Exception:
-            await client.send_message(uid, text, reply_markup=kb, parse_mode="html")
+            await client.send_message(uid, text, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
         await update.answer()
     else:
-        await update.reply(text, reply_markup=kb, parse_mode="html")
+        await update.reply(text, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
 
 
 # Skip media — text only ad
@@ -579,7 +579,7 @@ async def cb_skip_media(client: Client, cq: CallbackQuery):
             "Link, contact, details — sab likh sakte ho.\n"
             "Max 1024 characters.",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="cancel_ad")]]),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     except Exception:
         pass
@@ -638,14 +638,14 @@ async def handle_ad_creation(client: Client, message: Message):
                 f"💬 <b>User Feedback</b>\n\n"
                 f"User: {uname} (<code>{uid}</code>)\n\n"
                 f"Message:\n{message.text}",
-                parse_mode="html"
+                parse_mode=enums.ParseMode.HTML
             )
         except Exception:
             pass
         await message.reply(
             "✅ <b>Message Pahunch Gaya!</b>\n\nOwner jald hi reply karega.",
             reply_markup=kb_main_menu(),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
         return
 
@@ -675,7 +675,7 @@ async def handle_ad_creation(client: Client, message: Message):
             "Kya promote karna chahte ho?\n"
             "Max 1024 characters.",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="cancel_ad")]]),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
 
     # ── STEP: CAPTION ──
@@ -698,7 +698,7 @@ async def handle_ad_creation(client: Client, message: Message):
                 [InlineKeyboardButton("⏭ Skip — Hashtag Nahi Chahiye", callback_data="skip_hashtags")],
                 [InlineKeyboardButton("❌ Cancel", callback_data="cancel_ad")],
             ]),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
 
     # ── STEP: HASHTAGS ──
@@ -713,7 +713,7 @@ async def handle_ad_creation(client: Client, message: Message):
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("⏭ Skip", callback_data="skip_hashtags")],
                 ]),
-                parse_mode="html"
+                parse_mode=enums.ParseMode.HTML
             )
         tags = tags[:5]
         db.save_ad_session(uid, {"step": "buttons", "hashtags": tags})
@@ -725,7 +725,7 @@ async def handle_ad_creation(client: Client, message: Message):
         if not message.text or "|" not in message.text:
             return await message.reply(
                 "❌ Galat format!\n\nSahi: <code>Button Naam | https://link.com</code>",
-                parse_mode="html"
+                parse_mode=enums.ParseMode.HTML
             )
         parts   = message.text.split("|", 1)
         btn_txt = parts[0].strip()
@@ -738,7 +738,7 @@ async def handle_ad_creation(client: Client, message: Message):
             return await message.reply("Max 3 buttons add kar sakte ho!")
         buttons.append([{"text": btn_txt, "url": btn_url}])
         db.save_ad_session(uid, {"step": "buttons", "buttons": buttons})
-        await message.reply(f"✅ Button add ho gaya: <b>{btn_txt}</b>", parse_mode="html")
+        await message.reply(f"✅ Button add ho gaya: <b>{btn_txt}</b>", parse_mode=enums.ParseMode.HTML)
         await _show_button_step(client, uid, buttons)
 
     elif step in ("buttons", "ready"):
@@ -790,7 +790,7 @@ async def _show_button_step(client: Client, uid: int, buttons: list):
     kb_rows.append([InlineKeyboardButton("👁 Preview Dekho", callback_data="preview_ad")])
     kb_rows.append([InlineKeyboardButton("❌ Cancel", callback_data="cancel_ad")])
 
-    await client.send_message(uid, text, reply_markup=InlineKeyboardMarkup(kb_rows), parse_mode="html")
+    await client.send_message(uid, text, reply_markup=InlineKeyboardMarkup(kb_rows), parse_mode=enums.ParseMode.HTML)
 
 
 @app.on_callback_query(filters.regex(r"^del_btn_(\d+)$"))
@@ -830,7 +830,7 @@ async def cb_add_new_button(client: Client, cq: CallbackQuery):
             "Example:\n"
             "<code>Channel Join Karo | https://t.me/mychannel</code>",
             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="cancel_ad")]]),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     except Exception:
         pass
@@ -852,7 +852,7 @@ async def cb_skip_buttons(client: Client, cq: CallbackQuery):
                  InlineKeyboardButton("🚀 Submit Karo",  callback_data="submit_ad")],
                 [InlineKeyboardButton("❌ Cancel",        callback_data="cancel_ad")],
             ]),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     except Exception:
         pass
@@ -901,7 +901,7 @@ async def cb_preview_ad(client: Client, cq: CallbackQuery):
         elif mtype == "animation" and fid:
             await client.send_animation(cq.from_user.id, fid, caption=f"👁 PREVIEW\n\n{full_cap}", reply_markup=preview_kb)
         else:
-            await client.send_message(cq.from_user.id, f"👁 <b>PREVIEW</b>\n\n{full_cap}", reply_markup=preview_kb, parse_mode="html")
+            await client.send_message(cq.from_user.id, f"👁 <b>PREVIEW</b>\n\n{full_cap}", reply_markup=preview_kb, parse_mode=enums.ParseMode.HTML)
     except Exception as e:
         log.warning(f"Preview send failed: {e}")
 
@@ -909,7 +909,7 @@ async def cb_preview_ad(client: Client, cq: CallbackQuery):
         cq.from_user.id,
         "Upar dekho — yahi dikhega sabko!\n\n<b>Kya karna chahte ho?</b>",
         reply_markup=action_kb,
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
 
 
@@ -929,7 +929,7 @@ async def cb_edit_ad_menu(client: Client, cq: CallbackQuery):
             [InlineKeyboardButton("👁 Back to Preview",    callback_data="preview_ad")],
             [InlineKeyboardButton("❌ Cancel",              callback_data="cancel_ad")],
         ]),
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
     await cq.answer()
 
@@ -943,7 +943,7 @@ async def cb_edit_media(client: Client, cq: CallbackQuery):
             [InlineKeyboardButton("⏭ Text Only", callback_data="skip_media")],
             [InlineKeyboardButton("❌ Cancel", callback_data="cancel_ad")],
         ]),
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
     await cq.answer()
 
@@ -954,7 +954,7 @@ async def cb_edit_caption(client: Client, cq: CallbackQuery):
     await cq.message.edit_text(
         "📝 <b>Naya Caption Likho</b>",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="cancel_ad")]]),
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
     await cq.answer()
 
@@ -968,7 +968,7 @@ async def cb_edit_hashtags(client: Client, cq: CallbackQuery):
             [InlineKeyboardButton("⏭ Skip", callback_data="skip_hashtags")],
             [InlineKeyboardButton("❌ Cancel", callback_data="cancel_ad")],
         ]),
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
     await cq.answer()
 
@@ -1059,7 +1059,7 @@ async def _finalize_ad(client, user, session: dict):
                 InlineKeyboardButton("❌ Reject",     callback_data=f"reject_{ad_id}"),
                 InlineKeyboardButton("🚫 Copyright", callback_data=f"copyright_{ad_id}"),
             ]]),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     except Exception as e:
         log.error(f"Admin channel send failed: {e}")
@@ -1074,7 +1074,7 @@ async def _finalize_ad(client, user, session: dict):
             [InlineKeyboardButton("📋 Meri Posts",  callback_data="myposts_view"),
              InlineKeyboardButton("🏠 Menu",         callback_data="back_to_menu")],
         ]),
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
 
 
@@ -1106,7 +1106,7 @@ async def cb_approve(client: Client, cq: CallbackQuery):
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("📋 Meri Posts", callback_data="myposts_view")
                 ]]),
-                parse_mode="html"
+                parse_mode=enums.ParseMode.HTML
             )
         except Exception:
             pass
@@ -1143,7 +1143,7 @@ async def cb_reject(client: Client, cq: CallbackQuery):
                 reply_markup=InlineKeyboardMarkup([[
                     InlineKeyboardButton("📢 Dobara Banao", callback_data="start_create_ad")
                 ]]),
-                parse_mode="html"
+                parse_mode=enums.ParseMode.HTML
             )
         except Exception:
             pass
@@ -1171,7 +1171,7 @@ async def cb_copyright(client: Client, cq: CallbackQuery):
                 f"⚠️ <b>Copyright Warning!</b>\n\n"
                 f"Ad ID: <code>{ad_id}</code>\n\n"
                 f"Copyright content detect hua. {COPYRIGHT_MINS} min mein auto-delete hoga.",
-                parse_mode="html"
+                parse_mode=enums.ParseMode.HTML
             )
         except Exception:
             pass
@@ -1191,7 +1191,7 @@ async def cb_report(client: Client, cq: CallbackQuery):
                 InlineKeyboardButton("🗑 Delete",       callback_data=f"admin_del_{ad_id}"),
                 InlineKeyboardButton("🚫 Copyright",    callback_data=f"copyright_{ad_id}"),
             ]]),
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     except Exception:
         pass
@@ -1240,7 +1240,7 @@ async def cmd_stats(client: Client, message: Message):
             [InlineKeyboardButton("📡 Broadcast",  callback_data="admin_broadcast"),
              InlineKeyboardButton("🚀 Dashboard",  url=f"{WEBAPP_URL}/admin_panel")],
         ]),
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
 
 
@@ -1262,7 +1262,7 @@ async def cmd_delete_ad(client: Client, message: Message):
     ad_id    = args[0]
     ad       = db.get_ad(ad_id)
     if not ad:
-        return await message.reply(f"Ad nahi mila: <code>{ad_id}</code>", parse_mode="html")
+        return await message.reply(f"Ad nahi mila: <code>{ad_id}</code>", parse_mode=enums.ParseMode.HTML)
     owner_id = ad["owner_id"]
     if ad.get("db_channel_msg_id"):
         try:
@@ -1270,12 +1270,12 @@ async def cmd_delete_ad(client: Client, message: Message):
         except Exception:
             pass
     db.delete_ad(ad_id)
-    await message.reply(f"✅ Deleted! <code>{ad_id}</code>", parse_mode="html")
+    await message.reply(f"✅ Deleted! <code>{ad_id}</code>", parse_mode=enums.ParseMode.HTML)
     try:
         await client.send_message(
             owner_id,
             f"ℹ️ Tumhara ad delete kar diya gaya.\nAd ID: <code>{ad_id}</code>",
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     except Exception:
         pass
@@ -1287,7 +1287,7 @@ async def cmd_broadcast(client: Client, message: Message):
         return
     await message.reply("Mega-broadcast queue ho raha hai...")
     await sched.mega_broadcast()
-    await message.reply("✅ <b>Mega-Broadcast Queued!</b>", parse_mode="html")
+    await message.reply("✅ <b>Mega-Broadcast Queued!</b>", parse_mode=enums.ParseMode.HTML)
 
 
 @app.on_message(filters.command("send_broadcast") & filters.private)
@@ -1300,7 +1300,7 @@ async def cmd_send_broadcast(client: Client, message: Message):
         "Ab apna message bhejo (photo, video, text — kuch bhi).\n"
         "Bot woh sabhi users ko copy kar dega.\n\n"
         "Cancel: /cancel_broadcast",
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
 
 
@@ -1340,7 +1340,7 @@ async def _do_owner_broadcast(client: Client, message: Message, uid: int):
     try:
         await status_msg.edit_text(
             f"✅ <b>Broadcast Complete!</b>\n\nTotal: {total}\nDelivered: {success}\nFailed: {failed}",
-            parse_mode="html"
+            parse_mode=enums.ParseMode.HTML
         )
     except Exception:
         pass
@@ -1369,7 +1369,7 @@ async def cmd_admin(client: Client, message: Message):
             [InlineKeyboardButton("🖥 Dashboard",  url=f"{WEBAPP_URL}/admin_panel"),
              InlineKeyboardButton("📡 Broadcast", callback_data="admin_broadcast")],
         ]),
-        parse_mode="html"
+        parse_mode=enums.ParseMode.HTML
     )
 
 
@@ -1452,11 +1452,11 @@ async def _send_mypost_page(client, uid, ads, idx, message_or_cq, edit=False):
 
     if edit:
         try:
-            await message_or_cq.message.edit_text(text, reply_markup=kb, parse_mode="html")
+            await message_or_cq.message.edit_text(text, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
         except Exception:
             pass
     else:
-        await message_or_cq.reply(text, reply_markup=kb, parse_mode="html")
+        await message_or_cq.reply(text, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
 
 
 @app.on_callback_query(filters.regex(r"^mypost_nav_(\d+)$"))
@@ -1558,7 +1558,7 @@ async def cb_like_mypost(client: Client, cq: CallbackQuery):
             await client.send_message(
                 ad["owner_id"],
                 f"❤️ <b>{uname}</b> ne tumhari post like ki!\nTotal likes: {total}",
-                parse_mode="html"
+                parse_mode=enums.ParseMode.HTML
             )
         except Exception:
             pass
@@ -1678,7 +1678,7 @@ async def cb_like_post(client: Client, cq: CallbackQuery):
             await client.send_message(
                 ad["owner_id"],
                 f"❤️ <b>{uname}</b> ne like kiya!\n{cap_p}...\nTotal: {total}",
-                parse_mode="html"
+                parse_mode=enums.ParseMode.HTML
             )
         except Exception:
             pass
