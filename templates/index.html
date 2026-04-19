@@ -61,9 +61,13 @@
   .search-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 15px; outline: none; transition: border-color .2s; }
   .search-input:focus { border-color: var(--accent); }
   .search-btn { background: var(--accent); border: none; border-radius: 10px; padding: 0 16px; color: white; font-size: 20px; cursor: pointer; }
-  .result-card { background: var(--surface2); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; text-decoration: none; color: var(--text); }
-  .result-title { font-size: 14px; font-weight: 600; }
-  .result-tags { font-size: 11px; color: var(--accent); margin-top: 3px; }
+  .post-card { background: var(--surface2); border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); }
+  .post-caption { font-size: 14px; line-height: 1.55; color: var(--text); margin-bottom: 8px; white-space: pre-wrap; word-break: break-word; }
+  .post-tags { font-size: 11px; color: var(--accent); margin-bottom: 10px; }
+  .post-meta { font-size: 11px; color: var(--muted); display: flex; gap: 12px; margin-bottom: 10px; }
+  .post-btns { display: flex; flex-wrap: wrap; gap: 7px; }
+  .post-btn { flex: 1; min-width: 120px; padding: 10px 8px; background: rgba(255,107,53,0.15); border: 1px solid rgba(255,107,53,0.35); border-radius: 10px; color: var(--accent); font-size: 13px; font-weight: 600; text-align: center; text-decoration: none; display: block; transition: background .2s; }
+  .post-btn:active { background: rgba(255,107,53,0.3); }
   .ad-card { background: var(--surface2); border-radius: 10px; padding: 14px; margin-bottom: 10px; border-left: 3px solid var(--border); }
   .ad-card.approved { border-left-color: var(--green); }
   .ad-card.pending  { border-left-color: var(--gold); }
@@ -359,7 +363,7 @@ async function doSearch() {
   const q = document.getElementById('searchInput').value.trim();
   if (!q) return;
   const el = document.getElementById('searchResults');
-  el.innerHTML = '<div class="skeleton" style="height:60px;margin-bottom:8px"></div>'.repeat(3);
+  el.innerHTML = '<div class="skeleton" style="height:90px;margin-bottom:10px"></div>'.repeat(3);
   try {
     const r    = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
     const res  = await r.json();
@@ -369,9 +373,30 @@ async function doSearch() {
       return;
     }
     el.innerHTML = list.map(ad => {
-      const tags = (ad.tags||ad.hashtags||[]).map(t=>'#'+t).join(' ');
-      const url  = ad.link || ad.post_url || '';
-      return `<a class="result-card" ${url?`href="${url}" target="_blank"`:''}><div style="flex:1;min-width:0"><div class="result-title">${esc((ad.caption||'').slice(0,60))}</div><div class="result-tags">${esc(tags)}</div></div><span style="font-size:20px;margin-left:8px">${url?'→':'🔒'}</span></a>`;
+      const caption  = (ad.caption || '').trim();
+      const tags     = (ad.tags || ad.hashtags || []).map(t => '#' + t).join(' ');
+      const reach    = fmt(ad.reach || 0);
+      const likes    = ad.likes || 0;
+      // buttons: [[{text,url},...],...]
+      const btnRows  = ad.buttons || [];
+      let btnHtml    = '';
+      btnRows.forEach(row => {
+        btnHtml += `<div class="post-btns" style="margin-bottom:6px">`;
+        row.forEach(b => {
+          btnHtml += `<a class="post-btn" href="${esc(b.url)}" target="_blank">${esc(b.text)}</a>`;
+        });
+        btnHtml += `</div>`;
+      });
+      return `
+        <div class="post-card">
+          ${caption ? `<div class="post-caption">${esc(caption)}</div>` : ''}
+          ${tags    ? `<div class="post-tags">${esc(tags)}</div>` : ''}
+          <div class="post-meta">
+            <span>👁️ ${reach} reach</span>
+            <span>❤️ ${likes} likes</span>
+          </div>
+          ${btnHtml || ''}
+        </div>`;
     }).join('');
   } catch(e) {
     el.innerHTML = '<div class="empty-state"><div>❌ Error, dobara try karo</div></div>';
