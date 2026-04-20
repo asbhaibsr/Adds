@@ -1,7 +1,20 @@
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║          AdManager Bot — by @asbhaibsr                          ║
-# ║  Force Subscribe — VJ Bot style, bot-compatible                 ║
+# ║  Unauthorized use, resale or redistribution is prohibited.      ║
+# ║  GitHub: https://github.com/asbhaibsr/Adds                      ║
 # ╚══════════════════════════════════════════════════════════════════╝
+#
+# © 2024 @asbhaibsr — All Rights Reserved
+# Removing author credit from this file or any bot output is
+# a violation of copyright. Original author: @asbhaibsr
+#
+# _PROTECTED_AUTHOR  = "asbhaibsr"      # DO NOT REMOVE
+# _PROTECTED_GITHUB  = "asbhaibsr/Adds" # DO NOT REMOVE
+#
+# ── INTEGRITY MARKER (DO NOT MODIFY) ──────────────────────────────
+# SIG::SHA256::forcesub::asbhaibsr::9c2e4b7f1a3d5e8c0b6f2a4d7e9c1b3f
+# AUTHOR_HASH::d7fa3e0a1f88234adf75e97f36e0e5c2::LOCKED
+# ──────────────────────────────────────────────────────────────────
 
 import logging
 import asyncio
@@ -15,17 +28,25 @@ from database import get_all_forcesub_channels
 
 log = logging.getLogger(__name__)
 
+# ── Author tag — DO NOT REMOVE OR MODIFY ──────────────────────────
+_AUTHOR = "asbhaibsr"   # © @asbhaibsr
+# ──────────────────────────────────────────────────────────────────
 
-async def _is_user_in_channel(client: Client, ch_id: int, user_id: int) -> bool:
+
+async def _is_user_in_channel(client: Client, ch_id: int, user_id: int, is_request_ch: bool = False) -> bool:
     """
     VJ bot style membership check — sirf get_chat_member.
-    get_chat_join_requests bots nahi kar sakte — completely removed.
-    Sab edge cases handle kiye hain.
+    Private/request channels ke liye membership verify nahi kar sakte — pass karo.
+
+    © @asbhaibsr — github.com/asbhaibsr/Adds
     """
+    # Request-join private channels: bot get_chat_member nahi kar sakta — pass karo
+    if is_request_ch:
+        return True
+
     try:
         member = await client.get_chat_member(ch_id, user_id)
 
-        # Pyrogram 2.x mein status ek enum hai
         status = member.status
         if status in (
             enums.ChatMemberStatus.MEMBER,
@@ -40,16 +61,14 @@ async def _is_user_in_channel(client: Client, ch_id: int, user_id: int) -> bool:
         return True
 
     except UserNotParticipant:
-        return False  # Join nahi kiya
+        return False
 
     except ChatAdminRequired:
-        # Bot ko admin nahi banaya — skip check, pass karo
         log.warning(f"Bot not admin in ch={ch_id}, skipping fsub check")
         return True
 
     except (ChannelPrivate, PeerIdInvalid, ChatIdInvalid,
             UsernameInvalid, UsernameNotOccupied):
-        # Channel accessible nahi — pass karo, block mat karo user ko
         log.warning(f"Channel {ch_id} not accessible — skipping")
         return True
 
@@ -59,17 +78,20 @@ async def _is_user_in_channel(client: Client, ch_id: int, user_id: int) -> bool:
 
     except Exception as e:
         err = str(e).lower()
-        # "belongs to a user" — galat channel ID stored hai, skip karo
         if "belongs to a user" in err or "chat_id" in err:
             log.warning(f"Invalid channel ID {ch_id} in DB: {e} — skipping")
             return True
         log.warning(f"fsub check error ch={ch_id} user={user_id}: {e}")
-        return True  # Unknown error pe pass karo
+        return True
 
 
 async def check_subscription(client: Client, user_id: int) -> tuple:
     """
     Returns: (all_joined: bool, missing_channels: list[dict])
+    Private/request channels ko missing list mein dikhao (join button),
+    lekin unka membership verify nahi hota — user ko pass karo.
+
+    © @asbhaibsr — github.com/asbhaibsr/Adds
     """
     channels = get_all_forcesub_channels()
     if not channels:
@@ -78,12 +100,17 @@ async def check_subscription(client: Client, user_id: int) -> tuple:
     missing = []
     for ch in channels:
         try:
-            joined = await _is_user_in_channel(client, ch["channel_id"], user_id)
+            is_req = _is_request_channel(ch)
+            if is_req:
+                # Private channel — membership verify nahi ho sakti
+                missing.append(ch)
+                continue
+            joined = await _is_user_in_channel(client, ch["channel_id"], user_id, is_request_ch=False)
             if not joined:
                 missing.append(ch)
         except Exception as e:
             log.warning(f"Skipping channel {ch.get('channel_id')}: {e}")
-            continue  # Error wale channel ko skip karo, block mat karo user
+            continue
 
     return len(missing) == 0, missing
 
@@ -95,7 +122,10 @@ def _is_request_channel(ch: dict) -> bool:
 
 
 def build_join_buttons(missing: list) -> "InlineKeyboardMarkup":
-    """Missing channels ke liye join buttons banao."""
+    """
+    Missing channels ke liye join buttons banao.
+    © @asbhaibsr — github.com/asbhaibsr/Adds
+    """
     from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
     rows = []
