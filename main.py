@@ -33,13 +33,16 @@ def _check_integrity():
 
 _INTEGRITY = _check_integrity()
 
-# ── Client — in_memory=True (storage baad mein override hoga) ───────
+# ── Client — smooth && stable config ───────────────────────────────
 app = Client(
     "viral_bot",
     api_id    = os.getenv("API_ID", "29970536"),
     api_hash  = os.getenv("API_HASH", "f4bfdcdd4a5c1b7328a7e4f25f024a09"),
     bot_token = os.getenv("BOT_TOKEN"),
-    in_memory = True,
+    in_memory       = True,
+    workers         = 4,
+    sleep_threshold = 60,
+    max_concurrent_transmissions = 2,
 )
 
 OWNER_ID       = int(os.getenv("OWNER_ID", "7315805581"))
@@ -2001,6 +2004,12 @@ async def main():
         log.warning(f"MongoDB storage inject failed: {e} — falling back to in-memory")
 
     await app.start()
+    # Purane pending updates flush karo — UpdatesTooLong fix
+    await asyncio.sleep(1)
+    try:
+        await app.invoke({"_": "updates.GetState"})
+    except Exception:
+        pass
     me = await app.get_me()
     BOT_USERNAME = me.username or BOT_USERNAME
     os.environ["BOT_USERNAME"] = BOT_USERNAME
