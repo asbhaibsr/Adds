@@ -68,42 +68,6 @@
 
 ---
 
-## 🔄 Naye Systems (Latest Update)
-
-### 🎟 Redeem Code Fix
-- Pehle: redeem code se free ad milta tha lekin use nahi ho paata tha
-- **Ab**: code redeem karo → turant `/createad` karke ad post karo ✅
-
-### ❌ Reject = Ad Wapas
-- Admin agar ad reject kare → **1 free ad turant wapas** aa jaata hai
-- User ko clear message milta hai: "Abhi Dobara Banao" button ke saath
-
-### 🔞 18+ Content System
-- Admin panel mein **🔞 18+ Approve** button aata hai
-- Photo/Video → **Telegram Spoiler (blur)** ke saath jaata hai — tap karke dekhna padta hai
-- Caption mein **🔵 18+ CONTENT** watermark lagta hai
-- **30 minute baad** sabhi users ke paas se auto-delete ho jaata hai
-- User ko **1 strike** milti hai
-
-### 🚫 Copyright System (Updated)
-- Admin **🚫 Copyright** dabaye → user ko warning milti hai
-- **2 ghante baad** sabhi users ke paas se message auto-delete
-- User ko **1 strike** milti hai
-- Owner ko final confirmation message milta hai
-
-### 📅 Weekly Streak Reward
-- Har 7-din streak complete = **1 weekly streak**
-- **10 weekly streaks = 2 Extra Free Ads** bonus
-- Profile mein weekly streak, strikes sab dikhta hai
-
-### 👤 Ad mein Poster Info
-- Har broadcast mein dikhega: `👤 Naam | 🔥 Streak | 📅 Weekly | ⚠️ Strikes`
-
-### 🗑 Blocked Users Cleanup
-- `/stats` → **"Blocked Users Clear Karo"** button
-- Ek click mein blocked/deleted users ka data DB se saaf
-
----
 
 ## 🚀 Deploy Karo
 
