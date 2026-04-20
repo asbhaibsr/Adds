@@ -2032,6 +2032,36 @@ async def main():
     scheduler = sched.build_scheduler()
     scheduler.start()
     log.info("Scheduler started. Bot running!")
+
+    # ── Deploy startup message — LOG_CHANNEL ko batao ────────────
+    try:
+        stats       = db.get_user_stats()
+        fs_channels = db.get_all_forcesub_channels()
+        fs_list     = "\n".join(
+            [f"  • {c.get('title','?')} ({c['channel_id']})" for c in fs_channels]
+        ) or "  • Koi nahi set"
+
+        startup_text = (
+            f"🚀 <b>Bot Deploy Ho Gaya!</b>\n\n"
+            f"🤖 Bot: @{BOT_USERNAME}\n"
+            f"👥 Total Users: <b>{stats.get('total', 0)}</b>\n"
+            f"✅ Active Users: <b>{stats.get('active', 0)}</b>\n\n"
+            f"📡 <b>Force-Sub Channels:</b>\n{fs_list}\n\n"
+            f"⏱ Broadcast Interval: <b>{sched.POST_INTERVAL} min</b>\n"
+            f"🔄 Mega-Broadcast: <b>{sched.MEGA_TIMES}</b>\n\n"
+            f"✅ <b>Sab set hai — bot ready hai!</b>\n"
+            f"👨‍💻 Dev: @asbhaibsr"
+        )
+        await app.send_message(
+            LOG_CHANNEL,
+            startup_text,
+            parse_mode=enums.ParseMode.HTML
+        )
+        log.info("Startup message sent to log channel.")
+    except Exception as e:
+        log.warning(f"Startup message send failed: {e}")
+    # ──────────────────────────────────────────────────────────────
+
     await asyncio.Event().wait()
 
 
