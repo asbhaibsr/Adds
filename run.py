@@ -132,6 +132,7 @@ async def start_bot():
 
             # Known fatal errors — restart mat karo
             fatal_keywords = [
+                "AUTH_KEY_DUPLICATED",
                 "BOT_TOKEN_INVALID",
                 "AUTH_KEY_INVALID",
                 "API_ID_INVALID",
