@@ -64,6 +64,12 @@ def is_owner(uid: int) -> bool:
 # ══════════════════════════════════════════════════════════════════
 
 def kb_main_menu() -> InlineKeyboardMarkup:
+    # Dashboard button: WEBAPP_URL ho to web_app, warna url button
+    if WEBAPP_URL:
+        dashboard_btn = InlineKeyboardButton("🚀 Dashboard", web_app=WebAppInfo(url=WEBAPP_URL))
+    else:
+        dashboard_btn = InlineKeyboardButton("🚀 Dashboard", callback_data="noop")
+
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📢 Ad Banao", callback_data="start_create_ad")],
         [
@@ -74,9 +80,7 @@ def kb_main_menu() -> InlineKeyboardMarkup:
             InlineKeyboardButton("❓ Help",          callback_data="show_help"),
             InlineKeyboardButton("💬 Feedback",      callback_data="send_feedback"),
         ],
-        [
-            InlineKeyboardButton("🚀 Dashboard",     web_app=WebAppInfo(url=WEBAPP_URL)),
-        ],
+        [dashboard_btn],
         [InlineKeyboardButton("📖 Posts Browse Karo", callback_data="browse_posts_0")],
     ])
 
