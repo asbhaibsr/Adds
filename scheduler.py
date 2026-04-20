@@ -16,16 +16,20 @@ from dotenv import load_dotenv
 load_dotenv()
 log = logging.getLogger(__name__)
 
-POST_INTERVAL    = int(os.getenv("POST_INTERVAL_MINUTES", 30))   # Queue processor interval
+POST_INTERVAL    = int(os.getenv("POST_INTERVAL_MINUTES", 30))
 FLOOD_SLEEP_MIN  = int(os.getenv("FLOOD_WAIT_SLEEP_MIN",  10))
 FLOOD_SLEEP_MAX  = int(os.getenv("FLOOD_WAIT_SLEEP_MAX",  20))
-COPYRIGHT_MINS   = int(os.getenv("COPYRIGHT_DELETE_MINUTES", 7))
+COPYRIGHT_MINS   = int(os.getenv("COPYRIGHT_DELETE_MINUTES", 120))   # 2 hours = 120 min
+ADULT_DELETE_MINS = int(os.getenv("ADULT_DELETE_MINUTES", 30))        # 18+ = 30 min
 MEGA_TIMES       = os.getenv("MEGA_BROADCAST_TIMES", "09:00,21:00")
 DB_CHANNEL       = int(os.getenv("DATABASE_CHANNEL_ID", 0))
-ROUND2_AFTER_HRS = int(os.getenv("ROUND2_AFTER_HOURS", 24))  # Round 2 = 24 ghante baad
+ROUND2_AFTER_HRS = int(os.getenv("ROUND2_AFTER_HOURS", 24))
 
 _bot_client  = None
 _is_sleeping = False
+
+# ad_id → {user_id: msg_id} — broadcasted messages track karne ke liye auto-delete
+_broadcast_msg_map: dict[str, dict[int, int]] = {}
 
 
 def set_client(client):
@@ -37,16 +41,18 @@ def is_sleeping() -> bool:
     return _is_sleeping
 
 
+def record_sent_msg(ad_id: str, user_id: int, msg_id: int):
+    """Sent message track karo — baad mein delete ke liye."""
+    if ad_id not in _broadcast_msg_map:
+        _broadcast_msg_map[ad_id] = {}
+    _broadcast_msg_map[ad_id][user_id] = msg_id
+
+
 # ═══════════════════════════════════════════════════════════════════
-#  QUEUE PROCESSOR — har POST_INTERVAL minutes chalega
+#  QUEUE PROCESSOR
 # ═══════════════════════════════════════════════════════════════════
 
 async def process_queue():
-    """
-    Pop one ad from queue, broadcast to ALL active users.
-    Round 1 = pehli baar (aaj)
-    Round 2 = 24 ghante baad (agle din) — naye users bhi milte hain
-    """
     global _is_sleeping
     if _is_sleeping or not _bot_client:
         return
@@ -61,14 +67,18 @@ async def process_queue():
         return
 
     round_num = ad.get("_queue_round", 1)
-    log.info(f"Broadcasting ad {ad['_id']} — Round {round_num} ...")
+    ad_id     = str(ad["_id"])
+    log.info(f"Broadcasting ad {ad_id} — Round {round_num} ...")
 
     users = get_all_active_users()
     sent  = 0
 
     for u in users:
+        uid = u["user_id"]
         try:
-            await send_ad_to_user(_bot_client, u["user_id"], ad)
+            msg_id = await send_ad_to_user(_bot_client, uid, ad)
+            if msg_id:
+                record_sent_msg(ad_id, uid, msg_id)
             sent += 1
             await asyncio.sleep(0.05)
         except Exception as e:
@@ -80,18 +90,18 @@ async def process_queue():
                 log.warning(f"FloodWait! Sleeping {sleep_mins} min.")
                 await _deep_sleep(sleep_mins * 60)
                 return
-            elif "USER_IS_BLOCKED" in err or "user is deactivated" in err.lower():
-                mark_user_blocked(u["user_id"])
+            elif "USER_IS_BLOCKED" in err or "user is deactivated" in err.lower() \
+                    or "peer id invalid" in err.lower():
+                mark_user_blocked(uid)
             else:
-                log.warning(f"Failed to send to {u['user_id']}: {e}")
+                log.warning(f"Failed to send to {uid}: {e}")
 
-    # Update reach + round timestamp
-    increment_ad_reach(str(ad["_id"]), sent, round_num=round_num)
-    log.info(f"Ad {ad['_id']} Round {round_num} sent to {sent} users.")
+    increment_ad_reach(ad_id, sent, round_num=round_num)
+    log.info(f"Ad {ad_id} Round {round_num} sent to {sent} users.")
 
-    # Notify ad owner
+    # Owner notify
     try:
-        updated = get_ad(str(ad["_id"]))
+        updated   = get_ad(ad_id)
         round_msg = (
             f"Round {round_num} broadcast complete!\n"
             f"Sent to: {sent} users\n"
@@ -107,14 +117,11 @@ async def process_queue():
 
         await _bot_client.send_message(
             ad["owner_id"],
-            f"📊 Ad Update!\n\n"
-            f"Ad ID: `{str(ad['_id'])}`\n"
-            f"{round_msg}",
+            f"📊 Ad Update!\n\nAd ID: `{ad_id}`\n{round_msg}",
         )
     except Exception:
         pass
 
-    # After round 2 — mark completed
     if round_num == 2:
         try:
             if ad.get("db_channel_msg_id"):
@@ -122,10 +129,10 @@ async def process_queue():
         except Exception as e:
             log.warning(f"Could not delete DB msg: {e}")
         ads_col.update_one(
-            {"_id": ObjectId(str(ad["_id"]))},
+            {"_id": ObjectId(ad_id)},
             {"$set": {"status": "completed"}}
         )
-        log.info(f"Ad {ad['_id']} completed both rounds. Archived.")
+        log.info(f"Ad {ad_id} completed both rounds. Archived.")
 
 
 def _parse_flood_wait(error_str: str) -> int:
@@ -144,13 +151,10 @@ async def _deep_sleep(seconds: int):
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  ROUND 2 SCHEDULER — har ghante check karta hai
-#  Jo ads 24+ ghante pehle round 1 complete kar chuke hain
-#  unhe round 2 ke liye queue karo
+#  ROUND 2 SCHEDULER
 # ═══════════════════════════════════════════════════════════════════
 
 async def schedule_round2():
-    """Check karo kaunse ads round 2 ke liye ready hain (24h baad)."""
     if _is_sleeping or not _bot_client:
         return
     from database import queue_round2_ads
@@ -160,18 +164,15 @@ async def schedule_round2():
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  MEGA-BROADCAST — daily 2 baar (9am + 9pm)
-#  Sirf new approved ads jo abhi tak kisi round mein nahi gaye
+#  MEGA-BROADCAST
 # ═══════════════════════════════════════════════════════════════════
 
 async def mega_broadcast():
-    """Queue all fresh approved ads for Round 1."""
     if _is_sleeping or not _bot_client:
         return
     from database import ads_col, queue_col
 
     already_queued = {d["ad_id"] for d in queue_col.find({})}
-    # Sirf wo ads jo abhi tak kisi round mein nahi gaye (posted_count = 0)
     fresh_ads = list(ads_col.find({
         "status":       "approved",
         "posted_count": 0,
@@ -192,7 +193,7 @@ async def mega_broadcast():
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  COPYRIGHT AUTO-DELETE
+#  COPYRIGHT AUTO-DELETE — 2 GHANTE BAAD (users ke messages bhi)
 # ═══════════════════════════════════════════════════════════════════
 
 async def auto_delete_copyright():
@@ -205,17 +206,110 @@ async def auto_delete_copyright():
     flagged = list(ads_col.find({
         "is_copyright": True,
         "status":       {"$ne": "deleted"},
-        "created_at":   {"$lte": cutoff},
+        "copyright_flagged_at": {"$lte": cutoff},
     }))
 
     for ad in flagged:
+        ad_id = str(ad["_id"])
+
+        # DB channel se delete karo
         try:
             if ad.get("db_channel_msg_id"):
                 await _bot_client.delete_messages(DB_CHANNEL, ad["db_channel_msg_id"])
         except Exception as e:
-            log.warning(f"Could not delete DB msg: {e}")
+            log.warning(f"DB msg delete failed: {e}")
+
+        # Sabhi users ke paas se delete karo
+        sent_map = _broadcast_msg_map.get(ad_id, {})
+        deleted_count = 0
+        for uid, msg_id in sent_map.items():
+            try:
+                await _bot_client.delete_messages(uid, msg_id)
+                deleted_count += 1
+                await asyncio.sleep(0.03)
+            except Exception:
+                pass
+        if sent_map:
+            _broadcast_msg_map.pop(ad_id, None)
+            log.info(f"Copyright ad {ad_id}: deleted from {deleted_count} users.")
+
         ads_col.update_one({"_id": ad["_id"]}, {"$set": {"status": "deleted"}})
-        log.info(f"Auto-deleted copyright ad {ad['_id']}")
+
+        # Owner ko batao
+        try:
+            await _bot_client.send_message(
+                ad["owner_id"],
+                f"🚫 <b>Copyright Ad Auto-Delete Ho Gaya!</b>\n\n"
+                f"Ad ID: <code>{ad_id}</code>\n\n"
+                f"Tumhara content copyright violate karta tha isliye "
+                f"sabhi users ke paas se {COPYRIGHT_MINS} minute baad delete ho gaya.\n"
+                f"⚠️ Ek strike tumhare account par lag gayi hai.",
+                parse_mode="html"
+            )
+        except Exception:
+            pass
+
+        log.info(f"Auto-deleted copyright ad {ad_id}")
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  18+ AUTO-DELETE — 30 MINUTE BAAD (users ke messages bhi)
+# ═══════════════════════════════════════════════════════════════════
+
+async def auto_delete_18plus():
+    if not _bot_client:
+        return
+    from database import ads_col
+    from bson import ObjectId
+
+    cutoff  = datetime.now(timezone.utc) - timedelta(minutes=ADULT_DELETE_MINS)
+    flagged = list(ads_col.find({
+        "is_18plus":         True,
+        "status":            {"$ne": "deleted"},
+        "flagged_18plus_at": {"$lte": cutoff},
+    }))
+
+    for ad in flagged:
+        ad_id = str(ad["_id"])
+
+        # DB channel se delete
+        try:
+            if ad.get("db_channel_msg_id"):
+                await _bot_client.delete_messages(DB_CHANNEL, ad["db_channel_msg_id"])
+        except Exception as e:
+            log.warning(f"18+ DB msg delete failed: {e}")
+
+        # Sabhi users ke paas se delete
+        sent_map = _broadcast_msg_map.get(ad_id, {})
+        deleted_count = 0
+        for uid, msg_id in sent_map.items():
+            try:
+                await _bot_client.delete_messages(uid, msg_id)
+                deleted_count += 1
+                await asyncio.sleep(0.03)
+            except Exception:
+                pass
+        if sent_map:
+            _broadcast_msg_map.pop(ad_id, None)
+            log.info(f"18+ ad {ad_id}: deleted from {deleted_count} users.")
+
+        ads_col.update_one({"_id": ad["_id"]}, {"$set": {"status": "deleted"}})
+
+        # Owner ko batao
+        try:
+            await _bot_client.send_message(
+                ad["owner_id"],
+                f"🔞 <b>18+ Ad Auto-Delete Ho Gaya!</b>\n\n"
+                f"Ad ID: <code>{ad_id}</code>\n\n"
+                f"Tumhara 18+ content {ADULT_DELETE_MINS} minute baad sabhi users ke paas se "
+                f"automatically delete ho gaya.\n"
+                f"⚠️ Ek strike tumhare account par lag gayi hai.",
+                parse_mode="html"
+            )
+        except Exception:
+            pass
+
+        log.info(f"Auto-deleted 18+ ad {ad_id}")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -232,11 +326,12 @@ async def clean_blocked_users():
         try:
             await _bot_client.send_chat_action(u["user_id"], "typing")
         except Exception as e:
-            if "USER_IS_BLOCKED" in str(e) or "peer id invalid" in str(e).lower():
+            if "USER_IS_BLOCKED" in str(e) or "peer id invalid" in str(e).lower() \
+                    or "user is deactivated" in str(e).lower():
                 mark_user_blocked(u["user_id"])
                 removed += 1
         await asyncio.sleep(0.1)
-    log.info(f"Cleanup: removed {removed} blocked users.")
+    log.info(f"Cleanup: marked {removed} blocked users.")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -254,7 +349,7 @@ def build_scheduler() -> AsyncIOScheduler:
         max_instances=1, coalesce=True,
     )
 
-    # Round 2 checker: har 1 ghante mein — 24h baad ready ads queue karo
+    # Round 2 checker: har 1 ghante mein
     scheduler.add_job(
         schedule_round2, "interval",
         hours=1,
@@ -262,7 +357,7 @@ def build_scheduler() -> AsyncIOScheduler:
         max_instances=1, coalesce=True,
     )
 
-    # Mega-broadcast: 2x daily — fresh ads ke liye
+    # Mega-broadcast: 2x daily
     for i, t in enumerate(MEGA_TIMES.split(",")):
         h, m = t.strip().split(":")
         scheduler.add_job(
@@ -272,11 +367,19 @@ def build_scheduler() -> AsyncIOScheduler:
             max_instances=1,
         )
 
-    # Copyright auto-delete: har 3 minutes
+    # Copyright auto-delete: har 5 minutes check
     scheduler.add_job(
         auto_delete_copyright, "interval",
-        minutes=3,
+        minutes=5,
         id="auto_delete_copyright",
+        max_instances=1,
+    )
+
+    # 18+ auto-delete: har 5 minutes check
+    scheduler.add_job(
+        auto_delete_18plus, "interval",
+        minutes=5,
+        id="auto_delete_18plus",
         max_instances=1,
     )
 
