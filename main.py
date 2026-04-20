@@ -16,7 +16,6 @@ from pyrogram.types import (
 import scheduler as sched
 import database as db
 from utils.forcesub import check_subscription, build_join_buttons
-from mongo_session import MongoStorage
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -34,16 +33,13 @@ def _check_integrity():
 
 _INTEGRITY = _check_integrity()
 
-# ── MongoDB Session Storage — Koyeb/any cloud pe restart-proof ──────
-_mongo_uri     = os.getenv("MONGO_URI", "")
-_mongo_storage = MongoStorage("viral_bot", _mongo_uri) if _mongo_uri else None
-
+# ── Client — in_memory=True (storage baad mein override hoga) ───────
 app = Client(
     "viral_bot",
     api_id    = os.getenv("API_ID", "29970536"),
     api_hash  = os.getenv("API_HASH", "f4bfdcdd4a5c1b7328a7e4f25f024a09"),
     bot_token = os.getenv("BOT_TOKEN"),
-    storage   = _mongo_storage,   # MongoDB mein session — restart pe peer valid rehega
+    in_memory = True,
 )
 
 OWNER_ID       = int(os.getenv("OWNER_ID", "7315805581"))
@@ -1985,6 +1981,20 @@ async def main():
         log.info(f"Startup migration complete: {fixed} users ke free_ads fix kiye")
     except Exception as e:
         log.warning(f"Migration error (non-fatal): {e}")
+
+    # ── MongoDB Storage inject karo — restart-proof session ──────
+    # Pyrogram 2.0.106 mein 'storage' param nahi hai, isliye directly override karte hain
+    try:
+        _mongo_uri = os.getenv("MONGO_URI", "")
+        if _mongo_uri:
+            from mongo_session import MongoStorage
+            mongo_storage = MongoStorage("viral_bot", _mongo_uri)
+            app.storage = mongo_storage
+            log.info("MongoDB session storage injected — restart-proof!")
+        else:
+            log.warning("MONGO_URI missing — using in-memory session (peer id may reset on restart)")
+    except Exception as e:
+        log.warning(f"MongoDB storage inject failed: {e} — falling back to in-memory")
 
     await app.start()
     me = await app.get_me()
