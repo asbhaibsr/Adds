@@ -26,12 +26,14 @@
 - **2-Round System**: Aaj + Agle din
 - Naye users bhi Round 2 mein cover hote hain
 - Auto-queue with flood protection
+- Har ad ke saath **poster ka naam, streak aur strikes** dikhta hai
 
 </td>
 <td width="50%">
 
 ### 🎯 Smart Earning System
 - **Daily Streak**: 7 din = 1 Free Ad
+- **Weekly Streak**: 10 weekly streaks complete = 2 Extra Free Ads
 - **Referral System**: 10 refers = 1 Free Ad
 - **Redeem Codes**: Owner special codes generate kare
 - Like / Unlike posts
@@ -43,9 +45,13 @@
 
 ### 🛡️ Admin Controls
 - Approve / Reject / Copyright flag
+- **🔞 18+ Approve** — blurred spoiler ke saath jaata hai, 30 min baad auto-delete
+- **Copyright** — 2 ghante baad sabhi users ke paas se auto-delete
+- **Strike System** — Copyright/18+ par user ko strike milti hai
 - Force-Subscribe (normal + request channels)
 - Redeem code generate karo
 - Manual broadcast trigger
+- **Blocked users ka data ek click mein clear karo**
 
 </td>
 <td width="50%">
@@ -59,6 +65,43 @@
 </td>
 </tr>
 </table>
+
+---
+
+## 🔄 Naye Systems (Latest Update)
+
+### 🎟 Redeem Code Fix
+- Pehle: redeem code se free ad milta tha lekin use nahi ho paata tha
+- **Ab**: code redeem karo → turant `/createad` karke ad post karo ✅
+
+### ❌ Reject = Ad Wapas
+- Admin agar ad reject kare → **1 free ad turant wapas** aa jaata hai
+- User ko clear message milta hai: "Abhi Dobara Banao" button ke saath
+
+### 🔞 18+ Content System
+- Admin panel mein **🔞 18+ Approve** button aata hai
+- Photo/Video → **Telegram Spoiler (blur)** ke saath jaata hai — tap karke dekhna padta hai
+- Caption mein **🔵 18+ CONTENT** watermark lagta hai
+- **30 minute baad** sabhi users ke paas se auto-delete ho jaata hai
+- User ko **1 strike** milti hai
+
+### 🚫 Copyright System (Updated)
+- Admin **🚫 Copyright** dabaye → user ko warning milti hai
+- **2 ghante baad** sabhi users ke paas se message auto-delete
+- User ko **1 strike** milti hai
+- Owner ko final confirmation message milta hai
+
+### 📅 Weekly Streak Reward
+- Har 7-din streak complete = **1 weekly streak**
+- **10 weekly streaks = 2 Extra Free Ads** bonus
+- Profile mein weekly streak, strikes sab dikhta hai
+
+### 👤 Ad mein Poster Info
+- Har broadcast mein dikhega: `👤 Naam | 🔥 Streak | 📅 Weekly | ⚠️ Strikes`
+
+### 🗑 Blocked Users Cleanup
+- `/stats` → **"Blocked Users Clear Karo"** button
+- Ek click mein blocked/deleted users ka data DB se saaf
 
 ---
 
@@ -77,7 +120,7 @@ Koyeb account (free tier)
 
 `.env` file:
 ```env
-API_ID=29970536
+API_ID=your_api_id
 API_HASH=your_api_hash
 BOT_TOKEN=your_bot_token
 BOT_USERNAME=YourBotUsername
@@ -90,18 +133,23 @@ ADMIN_CHANNEL_ID=-100xxxxxxxxxx
 APP_URL=https://your-app.koyeb.app
 WEBAPP_URL=https://your-app.koyeb.app
 
-POST_INTERVAL_MINUTES=30
+POST_INTERVAL_MINUTES=10
 ROUND2_AFTER_HOURS=24
-COPYRIGHT_DELETE_MINUTES=7
-ADMIN_SECRET=your_dashboard_password   ← Yahi admin panel ka password hai
+COPYRIGHT_DELETE_MINUTES=120
+ADULT_DELETE_MINUTES=30
 MEGA_BROADCAST_TIMES=09:00,21:00
+ADMIN_PASSWORD=apna_strong_password
+LOG_CHANNEL_ID=-100xxxxxxxxxx
 ```
+
+> ⚠️ `COPYRIGHT_DELETE_MINUTES=120` = 2 ghante baad delete
+> ⚠️ `ADULT_DELETE_MINUTES=30` = 30 minute baad delete
 
 ### Step 3 — Koyeb Deploy
 ```bash
 # 1. GitHub pe fork karo: https://github.com/asbhaibsr/Adds
 # 2. koyeb.com pe account banao
-# 3. "Create App" -> GitHub repo connect karo
+# 3. "Create App" → GitHub repo connect karo
 # 4. Environment variables set karo
 # 5. Deploy!
 ```
@@ -114,13 +162,11 @@ python run.py
 
 ---
 
-## 🔐 Admin Dashboard Password
+## 🔐 Admin Dashboard
 
 Browser se `https://your-app.koyeb.app/admin_panel` kholo.
 
-Password = `.env` mein jo **`ADMIN_SECRET`** set kiya hai — wahi daalo.
-
-> **Default (agar set nahi kiya):** koi bhi value kaam karegi — isliye `.env` mein zaroor set karo.
+Password = `.env` mein jo **`ADMIN_PASSWORD`** set kiya hai.
 
 ---
 
@@ -130,17 +176,18 @@ Password = `.env` mein jo **`ADMIN_SECRET`** set kiya hai — wahi daalo.
 Adds/
 ├── main.py              Bot handlers & commands
 ├── database.py          MongoDB operations
-├── scheduler.py         Background jobs & broadcasting
+├── scheduler.py         Background jobs, broadcasting, auto-delete
 ├── app.py               Flask API & Mini App backend
 ├── run.py               Entry point
 ├── requirements.txt     Dependencies
 ├── koyeb.yaml           Koyeb config
+├── .env                 Environment variables
 ├── templates/
 │   ├── index.html       User Dashboard (Mini App)
 │   └── admin.html       Admin Panel
 └── utils/
-    ├── broadcaster.py   Ad sending logic
-    └── forcesub.py      Force subscribe (normal + request channels)
+    ├── broadcaster.py   Ad sending logic (blur, user info)
+    └── forcesub.py      Force subscribe
 ```
 
 ---
@@ -158,15 +205,15 @@ Adds/
 
 **Redeem Code:**
 ```
-#redeem ADMS-XXXXXX — Redeem code lagao → 1 Free Ad milega
+#redeem ADMS-XXXXXX
 ```
+Bot PM mein likho → 1 Free Ad turant account mein!
 
-> Copy karke BotFather mein paste karo 👇
-
+> BotFather ke liye:
 ```
-start - Bot shuru karo / main menu
+start - Bot shuru karo
 createad - Naya ad banao
-myposts - Apni saari posts dekho
+myposts - Apni posts dekho
 search - Posts search karo
 done - Ad session finalize karo
 ```
@@ -177,7 +224,7 @@ done - Ad session finalize karo
 
 ```
 /admin              — Admin panel + redeem button
-/stats              — Bot statistics (users, active, blocked)
+/stats              — Bot statistics + blocked users clear button
 /broadcast          — Manual mega-broadcast trigger
 /send_broadcast     — Custom message sabko bhejo
 /cancel_broadcast   — Broadcast cancel karo
@@ -188,8 +235,7 @@ done - Ad session finalize karo
 /gencode 3          — 3-use redeem code generate karo
 ```
 
-> Copy karke BotFather mein paste karo 👇
-
+> BotFather ke liye:
 ```
 admin - Admin panel kholo
 stats - Bot statistics dekho
@@ -206,10 +252,10 @@ gencode - Redeem code generate karo
 
 ## 🎟️ Redeem Code System
 
-**Owner kaise code banaye:**
-- Bot mein `/admin` → **🎟 Redeem Code Generate Karo** button dabao
-- Ya `/gencode` — ek use wala code
-- Ya `/gencode 5` — 5 users use kar sakein aise code
+**Owner code kaise banaye:**
+- `/admin` → **🎟 Redeem Code Generate Karo** button
+- Ya `/gencode` — 1 use wala
+- Ya `/gencode 5` — 5 users use kar sakein
 
 **Code format:** `ADMS-ABC123`
 
@@ -217,12 +263,34 @@ gencode - Redeem code generate karo
 ```
 #redeem ADMS-ABC123
 ```
-Bot PM mein likho → 1 Free Ad turant account mein add!
+→ 1 Free Ad turant milega → `/createad` se use karo
 
 **Rules:**
 - Ek user ek code sirf **1 baar** use kar sakta hai
-- Code limit khatam hone pe automatically deactivate
-- Owner channel pe code post kare, users redeem karein
+- Limit khatam → auto deactivate
+- Redeem ke baad **pehli ad bhi free** hogi ✅
+
+---
+
+## 🔢 Strike System
+
+| Action | Strike |
+|--------|--------|
+| Copyright content | ⚠️ +1 Strike |
+| 18+ content | ⚠️ +1 Strike |
+
+Strikes profile mein dikhti hain aur har broadcast mein bhi.
+
+---
+
+## 🕐 Auto-Delete Timings
+
+| Content Type | Delete After |
+|-------------|-------------|
+| 🚫 Copyright | 2 ghante (120 min) |
+| 🔞 18+ Content | 30 minute |
+
+> Dono cases mein **sabhi users ke paas se** message delete hota hai, sirf DB se nahi.
 
 ---
 
@@ -247,6 +315,22 @@ Completed — Archive
 
 ---
 
+## 📅 Weekly Streak Reward
+
+```
+Roz check-in karo
+    │
+    ▼
+7 din streak → 1 Free Ad + 1 Weekly Streak
+    │
+10 Weekly Streaks complete?
+    │
+    ▼
+🏆 2 Extra Free Ads Bonus!
+```
+
+---
+
 ## 📌 Force Subscribe
 
 **Normal public channel:**
@@ -258,22 +342,21 @@ Completed — Archive
 ```
 /addforcesub -100xxxxxxxxxx
 ```
-Bot automatically detect karta hai `t.me/+hash` link se ki request channel hai ya public.
-Dono ke liye alag-alag check hota hai.
+Bot automatically detect karta hai. Dono ke liye alag check hota hai.
 
 ---
 
 ## 💡 Important Notes
 
-**DATABASE_CHANNEL** — Private channel banao, bot ko admin banao, ID daalo. Sab ads yahan store hote hain.
+**DATABASE_CHANNEL** — Private channel banao, bot ko admin banao, ID daalo.
 
-**ADMIN_SECRET** — `.env` mein strong password rakho. Yahi admin dashboard ka password hai. Browser se `your-app.koyeb.app/admin_panel` pe login hoga.
+**ADMIN_PASSWORD** — `.env` mein strong password rakho. Admin dashboard ka yahi password hai.
 
-**Redeploy** — Bot startup pe channel check karta hai. `Peer id invalid` aaye toh channel mein bot ko dobara admin banao.
+**Blocked Users** — `/stats` → "Blocked Users Clear Karo" button se time-to-time cleanup karo taaki broadcasts fast rahein.
 
 **UptimeRobot** — `https://your-app.koyeb.app/health` add karo free monitoring ke liye.
 
-**Force Sub Request Channel** — Bot ko channel ka admin banao with **"Manage Members"** permission — tabhi join requests check ho sakenge.
+**Force Sub Request Channel** — Bot ko **"Manage Members"** permission do.
 
 ---
 
