@@ -1,3 +1,4 @@
+
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║          AdManager Bot — by @asbhaibsr                          ║
 # ║  Unauthorized use, resale or redistribution is prohibited.      ║
@@ -56,9 +57,9 @@ def get_or_create_user(user_id: int, username: str = "", full_name: str = "") ->
             "last_week_checkin": None,  # NEW: last week number checked in
             "referral_count": 0,
             "referred_by": None,
-            "free_ads_earned": 0,
+            "free_ads_earned": 1,       # Naye user ko 1 free ad milta hai shuru mein
             "ads_posted": 0,
-            "strikes": 0,              # NEW: copyright/18+ strikes
+            "strikes": 0,
             "is_blocked": False,
             "joined_at": datetime.now(timezone.utc),
             "total_reach": 0,
@@ -249,21 +250,27 @@ def delete_ad(ad_id: str):
 
 
 def flag_copyright(ad_id: str):
+    """Copyright flag karo. ads_posted counter kam karo taaki user naya ad bana sake."""
     from bson import ObjectId
     now = datetime.now(timezone.utc)
     ads_col.update_one({"_id": ObjectId(ad_id)}, {"$set": {"is_copyright": True, "copyright_flagged_at": now}})
-    # Owner ko strike do
+    # Strike do + ads_posted counter fix karo
     ad = get_ad(ad_id)
     if ad:
-        users_col.update_one({"user_id": ad["owner_id"]}, {"$inc": {"strikes": 1}})
+        owner_data = users_col.find_one({"user_id": ad["owner_id"]}) or {}
+        current_posted = owner_data.get("ads_posted", 1)
+        users_col.update_one(
+            {"user_id": ad["owner_id"]},
+            {"$inc": {"strikes": 1}, "$set": {"ads_posted": max(0, current_posted - 1)}}
+        )
 
 
 def flag_18plus(ad_id: str):
-    """18+ content flag karo - 30 min baad delete hoga."""
+    """18+ content flag karo - 30 min baad delete hoga. ads_posted counter theek karo."""
     from bson import ObjectId
     now = datetime.now(timezone.utc)
     ads_col.update_one({"_id": ObjectId(ad_id)}, {"$set": {"is_18plus": True, "flagged_18plus_at": now}})
-    # Owner ko strike do
+    # Strike do (ads_posted mat ghataao — ad broadcast hogi toh poster ko credit milega)
     ad = get_ad(ad_id)
     if ad:
         users_col.update_one({"user_id": ad["owner_id"]}, {"$inc": {"strikes": 1}})
@@ -508,3 +515,68 @@ def get_all_redeem_codes() -> list:
 def deactivate_redeem_code(code: str) -> bool:
     res = redeem_col.update_one({"code": code}, {"$set": {"is_active": False}})
     return res.modified_count > 0
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  MIGRATION — purane stuck users fix
+#  Yeh function bot start pe call hota hai — ek baar chalata hai
+#  Jinke ads copyright/rejected/18+ hain unka ads_posted counter fix karo
+#  Aur jinke paas free_ads_earned = 0 hai aur koi active ad nahi unhe 1 free ad do
+# ═══════════════════════════════════════════════════════════════════
+
+def run_startup_migration():
+    """
+    Purane stuck users fix karo:
+    1. Copyright flagged ads ke owners ka ads_posted counter fix
+    2. Users jinke paas sirf rejected/copyright/18+ ads hain aur free_ads=0 — unhe 1 free ad do
+    3. Naye users (joined baad mein) jo free_ads=0 pe stuck hain
+    """
+    fixed_count = 0
+
+    # ── Fix 1: Copyright ads ke owners ───────────────────────────────
+    copyright_ads = list(ads_col.find({
+        "is_copyright": True,
+        "status": {"$in": ["rejected", "deleted"]},
+    }))
+    for ad in copyright_ads:
+        owner_id = ad.get("owner_id")
+        if not owner_id:
+            continue
+        owner = users_col.find_one({"user_id": owner_id}) or {}
+        # Agar owner ka ads_posted > 0 aur free_ads = 0 ho to fix karo
+        if owner.get("free_ads_earned", 0) == 0:
+            # Check: koi active ad hai?
+            active = ads_col.count_documents({
+                "owner_id": owner_id,
+                "status": {"$in": ["pending", "approved"]},
+                "is_copyright": {"$ne": True},
+                "is_18plus": {"$ne": True},
+            })
+            if active == 0:
+                users_col.update_one(
+                    {"user_id": owner_id},
+                    {"$inc": {"free_ads_earned": 1}}
+                )
+                fixed_count += 1
+
+    # ── Fix 2: Sirf rejected ads wale users ──────────────────────────
+    # Find users jinke paas koi approved/pending ad nahi aur free_ads = 0
+    all_users_stuck = list(users_col.find({"free_ads_earned": 0, "is_blocked": False}))
+    for user in all_users_stuck:
+        owner_id = user.get("user_id")
+        if not owner_id:
+            continue
+        active = ads_col.count_documents({
+            "owner_id": owner_id,
+            "status": {"$in": ["pending", "approved"]},
+            "is_copyright": {"$ne": True},
+            "is_18plus": {"$ne": True},
+        })
+        if active == 0:
+            users_col.update_one(
+                {"user_id": owner_id},
+                {"$set": {"free_ads_earned": 1}}
+            )
+            fixed_count += 1
+
+    return fixed_count
