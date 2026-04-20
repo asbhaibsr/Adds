@@ -16,6 +16,7 @@ from pyrogram.types import (
 import scheduler as sched
 import database as db
 from utils.forcesub import check_subscription, build_join_buttons
+from mongo_session import MongoStorage
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -33,12 +34,16 @@ def _check_integrity():
 
 _INTEGRITY = _check_integrity()
 
+# ── MongoDB Session Storage — Koyeb/any cloud pe restart-proof ──────
+_mongo_uri     = os.getenv("MONGO_URI", "")
+_mongo_storage = MongoStorage("viral_bot", _mongo_uri) if _mongo_uri else None
+
 app = Client(
     "viral_bot",
     api_id    = os.getenv("API_ID", "29970536"),
     api_hash  = os.getenv("API_HASH", "f4bfdcdd4a5c1b7328a7e4f25f024a09"),
     bot_token = os.getenv("BOT_TOKEN"),
-    in_memory = True,
+    storage   = _mongo_storage,   # MongoDB mein session — restart pe peer valid rehega
 )
 
 OWNER_ID       = int(os.getenv("OWNER_ID", "7315805581"))
@@ -498,22 +503,32 @@ async def cmd_create_ad(client, update):
 
     db_user    = db.get_user(uid) or {}
     user_ads   = db.get_user_ads(uid)
-    active_ads = [a for a in user_ads if a.get("status") in ("pending", "approved")]
-    ads_posted = db_user.get("ads_posted", 0)
     free_ads   = db_user.get("free_ads_earned", 0)
 
-    if active_ads:
-        status = active_ads[0].get("status", "?").upper()
+    # ── Sirf GENUINELY ACTIVE ads count honge ──────────────────────
+    # Rejected, copyright-flagged, 18+-flagged, completed, deleted = allowed to create new
+    active_ads = [
+        a for a in user_ads
+        if a.get("status") in ("pending", "approved")
+        and not a.get("is_copyright", False)   # copyright laga = active count se bahar
+        and not a.get("is_18plus", False)       # 18+ laga = active count se bahar
+    ]
+
+    # ── CASE 1: Active ad hai + free slot bhi nahi ─────────────────
+    if active_ads and free_ads <= 0:
+        active = active_ads[0]
+        status = active.get("status", "?").upper()
         msg = (
             f"⚠️ <b>Tumhara ek ad pehle se active hai!</b>\n\n"
             f"Status: {status}\n\n"
-            "Naya ad banane ke liye:\n"
-            "7 din streak puri karo — 1 Free Ad\n"
-            "Ya 10 dosto ko refer karo — 1 Free Ad"
+            "Naya ad banane ke liye earn karo:\n"
+            "🔁 7 din streak puri karo — 1 Free Ad\n"
+            "👥 10 dosto ko refer karo — 1 Free Ad\n"
+            "🎟 Redeem code use karo — 1 Free Ad"
         )
         kb = InlineKeyboardMarkup([
             [InlineKeyboardButton("📋 Meri Posts", callback_data="myposts_view")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back_to_menu")],
+            [InlineKeyboardButton("🔙 Back",        callback_data="back_to_menu")],
         ])
         if is_cb:
             try:
@@ -525,6 +540,7 @@ async def cmd_create_ad(client, update):
             await update.reply(msg, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
         return
 
+    # ── CASE 2: Free ad nahi bacha ─────────────────────────────────
     if free_ads <= 0:
         msg = (
             "❌ <b>Free ad nahi bacha!</b>\n\n"
@@ -536,7 +552,7 @@ async def cmd_create_ad(client, update):
         )
         kb = InlineKeyboardMarkup([
             [InlineKeyboardButton("👥 Refer Karo", callback_data="show_referral")],
-            [InlineKeyboardButton("🔙 Back", callback_data="back_to_menu")],
+            [InlineKeyboardButton("🔙 Back",        callback_data="back_to_menu")],
         ])
         if is_cb:
             try:
@@ -1258,6 +1274,17 @@ async def cb_copyright(client: Client, cq: CallbackQuery):
     ad_id = cq.matches[0].group(1)
     db.flag_copyright(ad_id)
     db.reject_ad(ad_id)
+
+    # ── Free ad wapas karo owner ko ──────────────────────────────
+    ad = db.get_ad(ad_id)
+    if ad:
+        db_user  = db.get_user(ad["owner_id"]) or {}
+        ads_post = db_user.get("ads_posted", 1)
+        db.update_user(ad["owner_id"], {
+            "ads_posted":      max(0, ads_post - 1),
+            "free_ads_earned": db_user.get("free_ads_earned", 0) + 1,
+        })
+
     try:
         await cq.message.edit_reply_markup(InlineKeyboardMarkup([[
             InlineKeyboardButton(f"🚫 COPYRIGHT — {COPYRIGHT_MINS//60}hr AUTO-DELETE", callback_data="noop")
@@ -1265,7 +1292,6 @@ async def cb_copyright(client: Client, cq: CallbackQuery):
     except Exception:
         pass
     await cq.answer("Flagged!")
-    ad = db.get_ad(ad_id)
     if ad:
         try:
             await client.send_message(
@@ -1275,7 +1301,11 @@ async def cb_copyright(client: Client, cq: CallbackQuery):
                 f"Tumhara content copyright violate karta hai.\n"
                 f"Yeh {COPYRIGHT_MINS // 60} ghante ({COPYRIGHT_MINS} min) baad sabhi users ke paas se "
                 f"auto-delete ho jaayega.\n\n"
-                f"⚠️ Ek <b>strike</b> tumhare account par lag gayi hai.",
+                f"⚠️ Ek <b>strike</b> tumhare account par lag gayi hai.\n\n"
+                f"✅ Tumhara <b>1 Free Ad wapas</b> aa gaya — naya ad bana sakte ho.",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("📢 Naya Ad Banao", callback_data="start_create_ad")
+                ]]),
                 parse_mode=enums.ParseMode.HTML
             )
         except Exception:
@@ -1295,6 +1325,11 @@ async def cb_adult_approve(client: Client, cq: CallbackQuery):
     ad_id = cq.matches[0].group(1)
     db.flag_18plus(ad_id)
     db.approve_ad(ad_id)
+
+    # ── 18+ approved mein free ad consume hoti hai (wapas nahi) ──
+    # Ad broadcast hogi, phir auto-delete. Free ad wapas NAHI milegi.
+    # Lekin user naya ad bana sake — active_ads check mein is_18plus=True skip hoga.
+
     try:
         await cq.message.edit_reply_markup(InlineKeyboardMarkup([[
             InlineKeyboardButton("🔞 18+ APPROVED — 30min DELETE", callback_data="noop")
@@ -1310,7 +1345,8 @@ async def cb_adult_approve(client: Client, cq: CallbackQuery):
                 f"🔞 <b>18+ Content Approve Hua!</b>\n\n"
                 f"Ad ID: <code>{ad_id}</code>\n\n"
                 f"⚠️ Tumhara ad sabko jaayega lekin <b>30 minute baad auto-delete</b> ho jaayega users ke paas se.\n"
-                f"Strike bhi lagi hai tumhare account par.",
+                f"Strike bhi lagi hai tumhare account par.\n\n"
+                f"<i>Note: 18+ content ke liye free ad wapas nahi milti.</i>",
                 parse_mode=enums.ParseMode.HTML
             )
         except Exception:
@@ -1942,16 +1978,42 @@ async def cb_del_broadcast(client: Client, cq: CallbackQuery):
 
 async def main():
     global BOT_USERNAME
+
+    # ── Startup migration — purane stuck users fix ───────────────
+    try:
+        fixed = db.run_startup_migration()
+        log.info(f"Startup migration complete: {fixed} users ke free_ads fix kiye")
+    except Exception as e:
+        log.warning(f"Migration error (non-fatal): {e}")
+
     await app.start()
     me = await app.get_me()
     BOT_USERNAME = me.username or BOT_USERNAME
     os.environ["BOT_USERNAME"] = BOT_USERNAME
     log.info(f"Bot started: @{BOT_USERNAME} | Author: @{_AUTHOR}")
+
+    # ── Channels pre-resolve karo — peer id invalid fix ─────────
+    channels_to_resolve = set()
+    channels_to_resolve.add(DB_CHANNEL)
+    channels_to_resolve.add(ADMIN_CHANNEL)
+    channels_to_resolve.add(LOG_CHANNEL)
+
     try:
-        await app.get_chat(DB_CHANNEL)
-        log.info(f"DB Channel OK: {DB_CHANNEL}")
-    except Exception as db_err:
-        log.warning(f"DB Channel issue: {db_err}")
+        fs_channels = db.get_all_forcesub_channels()
+        for ch in fs_channels:
+            channels_to_resolve.add(ch["channel_id"])
+    except Exception:
+        pass
+
+    for ch_id in channels_to_resolve:
+        if not ch_id or ch_id == 0:
+            continue
+        try:
+            await app.get_chat(ch_id)
+            log.info(f"Channel resolved OK: {ch_id}")
+        except Exception as e:
+            log.warning(f"Channel resolve issue {ch_id}: {e} — bot channel ka admin hai?")
+
     sched.set_client(app)
     scheduler = sched.build_scheduler()
     scheduler.start()
