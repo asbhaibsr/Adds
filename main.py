@@ -47,7 +47,7 @@ DB_CHANNEL     = int(os.getenv("DATABASE_CHANNEL_ID", "-1002717243409"))
 BOT_USERNAME   = os.getenv("BOT_USERNAME", "AdManagerfreebot")
 _koyeb_domain  = os.getenv("KOYEB_PUBLIC_DOMAIN", "")
 WEBAPP_URL     = os.getenv("WEBAPP_URL", os.getenv("APP_URL", f"https://{_koyeb_domain}") if _koyeb_domain else "")
-COPYRIGHT_MINS = os.getenv("COPYRIGHT_DELETE_MINUTES", "7")
+COPYRIGHT_MINS = int(os.getenv("COPYRIGHT_DELETE_MINUTES", 120))  # default 2 hours
 LOG_CHANNEL    = int(os.getenv("LOG_CHANNEL_ID", os.getenv("ADMIN_CHANNEL_ID", "-1002717243409")))
 
 
@@ -173,16 +173,19 @@ async def cmd_start(client: Client, message: Message):
     if not await force_sub_gate(client, user.id):
         return
 
-    db_user  = db.get_user(user.id) or {}
-    streak   = db_user.get("streak", 0)
-    refs     = db_user.get("referral_count", 0)
-    free_ads = db_user.get("free_ads_earned", 0)
-    is_new   = not existing
+    db_user       = db.get_user(user.id) or {}
+    streak        = db_user.get("streak", 0)
+    weekly_streak = db_user.get("weekly_streak", 0)
+    refs          = db_user.get("referral_count", 0)
+    free_ads      = db_user.get("free_ads_earned", 0)
+    strikes       = db_user.get("strikes", 0)
+    is_new        = not existing
 
     await message.reply(
         f"{'👋' if is_new else '🙌'} <b>{'Swaagat Hai!' if is_new else 'Wapas Aao!'} {user.first_name}</b>\n\n"
         "🚀 <b>50,000+ Users Tak FREE Promotion!</b>\n\n"
-        f"Streak: <b>{streak} din</b>  |  Referrals: <b>{refs}</b>  |  Free Ads: <b>{free_ads}</b>\n\n"
+        f"🔥 Streak: <b>{streak} din</b>  |  📅 Weekly: <b>{weekly_streak}</b>\n"
+        f"👥 Referrals: <b>{refs}</b>  |  🎟 Free Ads: <b>{free_ads}</b>  |  ⚠️ Strikes: <b>{strikes}</b>\n\n"
         "Neeche se option choose karo:",
         reply_markup=kb_main_menu(),
         parse_mode=enums.ParseMode.HTML
@@ -271,7 +274,9 @@ async def cb_show_help(client: Client, cq: CallbackQuery):
         "Is tarah views, followers, subscribers badhenge!\n\n"
         "<b>Free Ad Kaise Milega?</b>\n"
         "7 din streak — 1 Free Ad\n"
-        "10 refer — 1 Free Ad",
+        "10 refers — 1 Free Ad\n"
+        "10 weekly streaks (7-day streaks) — 2 Extra Free Ads\n"
+        "Redeem Code — 1 Free Ad",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("📢 Ad Banao", callback_data="start_create_ad")],
             [InlineKeyboardButton("🔙 Back", callback_data="back_to_menu")],
@@ -520,11 +525,14 @@ async def cmd_create_ad(client, update):
             await update.reply(msg, reply_markup=kb, parse_mode=enums.ParseMode.HTML)
         return
 
-    if ads_posted >= 1 and free_ads <= 0:
+    if free_ads <= 0:
         msg = (
             "❌ <b>Free ad nahi bacha!</b>\n\n"
-            "10 dosto ko refer karo — 1 Free Ad\n"
-            "7 din streak puri karo — 1 Free Ad"
+            "Free ad kaise pao:\n"
+            "🔁 7 din streak — 1 Free Ad\n"
+            "👥 10 refers — 1 Free Ad\n"
+            "🏆 10 weekly streaks — 2 Free Ads\n"
+            "🎟 Redeem code use karo — 1 Free Ad"
         )
         kb = InlineKeyboardMarkup([
             [InlineKeyboardButton("👥 Refer Karo", callback_data="show_referral")],
@@ -1127,7 +1135,8 @@ async def _finalize_ad(client, user, session: dict):
     ads_posted = db_user.get("ads_posted", 0)
     free_ads   = db_user.get("free_ads_earned", 0)
     upd        = {"ads_posted": ads_posted + 1}
-    if ads_posted >= 1 and free_ads > 0:
+    # BUG FIX: pehle free_ads check karo — agar hai to use karo (ads_posted >= 1 check hata diya)
+    if free_ads > 0:
         upd["free_ads_earned"] = max(0, free_ads - 1)
     db.update_user(uid, upd)
 
@@ -1141,11 +1150,16 @@ async def _finalize_ad(client, user, session: dict):
             f"Caption: {caption[:150]}\n"
             f"Tags: {tags_text or 'None'}\n"
             f"Buttons: {len(kb_data)}",
-            reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("✅ Approve",    callback_data=f"approve_{ad_id}"),
-                InlineKeyboardButton("❌ Reject",     callback_data=f"reject_{ad_id}"),
-                InlineKeyboardButton("🚫 Copyright", callback_data=f"copyright_{ad_id}"),
-            ]]),
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("✅ Approve",      callback_data=f"approve_{ad_id}"),
+                    InlineKeyboardButton("❌ Reject",       callback_data=f"reject_{ad_id}"),
+                ],
+                [
+                    InlineKeyboardButton("🚫 Copyright",   callback_data=f"copyright_{ad_id}"),
+                    InlineKeyboardButton("🔞 18+ Approve", callback_data=f"adult_{ad_id}"),
+                ],
+            ]),
             parse_mode=enums.ParseMode.HTML
         )
     except Exception as e:
@@ -1226,9 +1240,10 @@ async def cb_reject(client: Client, cq: CallbackQuery):
                 ad["owner_id"],
                 f"😔 <b>Ad Reject Ho Gaya</b>\n\n"
                 f"Ad ID: <code>{ad_id}</code>\n\n"
-                "Free ad waapis mil gaya! Dobara try karo: /createad",
+                "✅ Tumhara <b>1 Free Ad wapas</b> tumhare account mein aa gaya!\n"
+                "Tum abhi dobara naya ad bana sakte ho.",
                 reply_markup=InlineKeyboardMarkup([[
-                    InlineKeyboardButton("📢 Dobara Banao", callback_data="start_create_ad")
+                    InlineKeyboardButton("📢 Abhi Dobara Banao", callback_data="start_create_ad")
                 ]]),
                 parse_mode=enums.ParseMode.HTML
             )
@@ -1245,7 +1260,7 @@ async def cb_copyright(client: Client, cq: CallbackQuery):
     db.reject_ad(ad_id)
     try:
         await cq.message.edit_reply_markup(InlineKeyboardMarkup([[
-            InlineKeyboardButton(f"🚫 COPYRIGHT — {COPYRIGHT_MINS}min DELETE", callback_data="noop")
+            InlineKeyboardButton(f"🚫 COPYRIGHT — {COPYRIGHT_MINS//60}hr AUTO-DELETE", callback_data="noop")
         ]]))
     except Exception:
         pass
@@ -1257,7 +1272,45 @@ async def cb_copyright(client: Client, cq: CallbackQuery):
                 ad["owner_id"],
                 f"⚠️ <b>Copyright Warning!</b>\n\n"
                 f"Ad ID: <code>{ad_id}</code>\n\n"
-                f"Copyright content detect hua. {COPYRIGHT_MINS} min mein auto-delete hoga.",
+                f"Tumhara content copyright violate karta hai.\n"
+                f"Yeh {COPYRIGHT_MINS // 60} ghante ({COPYRIGHT_MINS} min) baad sabhi users ke paas se "
+                f"auto-delete ho jaayega.\n\n"
+                f"⚠️ Ek <b>strike</b> tumhare account par lag gayi hai.",
+                parse_mode=enums.ParseMode.HTML
+            )
+        except Exception:
+            pass
+
+
+
+# ══════════════════════════════════════════════════════════════════
+#  18+ APPROVED HANDLER
+# ══════════════════════════════════════════════════════════════════
+
+@app.on_callback_query(filters.regex(r"^adult_(.+)$"))
+async def cb_adult_approve(client: Client, cq: CallbackQuery):
+    """18+ content approve karo — user tak jaayega lekin 30 min baad delete hoga."""
+    if not is_owner(cq.from_user.id):
+        return await cq.answer("Sirf owner!", show_alert=True)
+    ad_id = cq.matches[0].group(1)
+    db.flag_18plus(ad_id)
+    db.approve_ad(ad_id)
+    try:
+        await cq.message.edit_reply_markup(InlineKeyboardMarkup([[
+            InlineKeyboardButton("🔞 18+ APPROVED — 30min DELETE", callback_data="noop")
+        ]]))
+    except Exception:
+        pass
+    await cq.answer("18+ Approved!")
+    ad = db.get_ad(ad_id)
+    if ad:
+        try:
+            await client.send_message(
+                ad["owner_id"],
+                f"🔞 <b>18+ Content Approve Hua!</b>\n\n"
+                f"Ad ID: <code>{ad_id}</code>\n\n"
+                f"⚠️ Tumhara ad sabko jaayega lekin <b>30 minute baad auto-delete</b> ho jaayega users ke paas se.\n"
+                f"Strike bhi lagi hai tumhare account par.",
                 parse_mode=enums.ParseMode.HTML
             )
         except Exception:
@@ -1275,8 +1328,9 @@ async def cb_report(client: Client, cq: CallbackQuery):
             OWNER_ID,
             f"🚨 <b>User Report</b>\n\nReporter: <code>{reporter}</code>\nAd ID: <code>{ad_id}</code>",
             reply_markup=InlineKeyboardMarkup([[
-                InlineKeyboardButton("🗑 Delete",       callback_data=f"admin_del_{ad_id}"),
-                InlineKeyboardButton("🚫 Copyright",    callback_data=f"copyright_{ad_id}"),
+                InlineKeyboardButton("🗑 Delete",        callback_data=f"admin_del_{ad_id}"),
+                InlineKeyboardButton("🚫 Copyright",     callback_data=f"copyright_{ad_id}"),
+                InlineKeyboardButton("🔞 18+ Approve",  callback_data=f"adult_{ad_id}"),
             ]]),
             parse_mode=enums.ParseMode.HTML
         )
@@ -1320,12 +1374,14 @@ async def cmd_stats(client: Client, message: Message):
         f"📊 <b>Bot Statistics</b>\n\n"
         f"Total Users: <b>{stats['total']}</b>\n"
         f"Active: <b>{stats['active']}</b>\n"
-        f"Blocked: <b>{stats['blocked']}</b>\n"
+        f"Blocked/Deleted: <b>{stats['blocked']}</b>\n"
         f"Reports: <b>{reports}</b>\n\n"
-        f"Deep Sleep: <b>{'YES' if sleeping else 'No'}</b>",
+        f"Deep Sleep: <b>{'YES' if sleeping else 'No'}</b>\n\n"
+        f"<i>Blocked users ka data clear karne ke liye niche button dabao.</i>",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("📡 Broadcast",  callback_data="admin_broadcast"),
              InlineKeyboardButton("🚀 Dashboard",  url=f"{WEBAPP_URL}/admin_panel")],
+            [InlineKeyboardButton("🗑 Blocked Users Clear Karo", callback_data="clear_blocked_users")],
         ]),
         parse_mode=enums.ParseMode.HTML
     )
@@ -1337,6 +1393,29 @@ async def cb_admin_broadcast(client: Client, cq: CallbackQuery):
         return await cq.answer("Owner only!", show_alert=True)
     await sched.mega_broadcast()
     await cq.answer("Broadcast queued!", show_alert=True)
+
+
+@app.on_callback_query(filters.regex("^clear_blocked_users$"))
+async def cb_clear_blocked_users(client: Client, cq: CallbackQuery):
+    """Blocked/deleted users ka data DB se hata do."""
+    if not is_owner(cq.from_user.id):
+        return await cq.answer("Owner only!", show_alert=True)
+    await cq.answer("Clearing...", show_alert=False)
+    from database import users_col
+    result = users_col.delete_many({"is_blocked": True})
+    deleted_count = result.deleted_count
+    try:
+        await cq.message.edit_text(
+            f"✅ <b>Cleanup Complete!</b>\n\n"
+            f"<b>{deleted_count}</b> blocked/deleted users ka data remove ho gaya.\n\n"
+            f"Ab naya /stats check karo.",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("📊 Stats", callback_data="noop")
+            ]]),
+            parse_mode=enums.ParseMode.HTML
+        )
+    except Exception:
+        pass
 
 
 @app.on_message(filters.command("deletead") & filters.private)
