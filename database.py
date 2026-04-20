@@ -52,10 +52,13 @@ def get_or_create_user(user_id: int, username: str = "", full_name: str = "") ->
             "full_name": full_name,
             "streak": 0,
             "last_checkin": None,
+            "weekly_streak": 0,        # NEW: weekly streak count (10 weeks = 2 free ads)
+            "last_week_checkin": None,  # NEW: last week number checked in
             "referral_count": 0,
             "referred_by": None,
             "free_ads_earned": 0,
             "ads_posted": 0,
+            "strikes": 0,              # NEW: copyright/18+ strikes
             "is_blocked": False,
             "joined_at": datetime.now(timezone.utc),
             "total_reach": 0,
@@ -122,12 +125,28 @@ def do_checkin(user_id: int) -> dict:
 
     update_user(user_id, {"streak": new_streak, "last_checkin": now})
 
+    free_ad_bonus = 0
+    bonus_msg = ""
+
+    # 7-day streak = 1 free ad
     if new_streak == 7:
         users_col.update_one({"user_id": user_id}, {"$inc": {"free_ads_earned": 1}})
+        free_ad_bonus = 1
+        bonus_msg = " 🎉 7-Day Streak! 1 Free Ad Unlock Ho Gaya!"
 
-    bonus_msg  = " 7-Day Streak! 1 Free Ad Unlock Ho Gaya!" if new_streak == 7 else ""
+    # Weekly streak: har 7-day streak complete hone par weekly_streak +1
+    # 10 weekly streaks = 2 extra free ads
+    if new_streak % 7 == 0 and new_streak > 0:
+        user_fresh = get_user(user_id) or {}
+        new_weekly = user_fresh.get("weekly_streak", 0) + 1
+        users_col.update_one({"user_id": user_id}, {"$set": {"weekly_streak": new_weekly}})
+        if new_weekly % 10 == 0:
+            users_col.update_one({"user_id": user_id}, {"$inc": {"free_ads_earned": 2}})
+            bonus_msg += f" 🏆 {new_weekly} Weekly Streaks Complete! 2 Extra Free Ads Mil Gaye!"
+
     broken_msg = " (Streak toot gayi thi, naye sire se shuru!)" if broken else ""
     return {"success": True, "streak": new_streak, "already_done": False, "broken": broken,
+            "free_ad_bonus": free_ad_bonus,
             "message": f"Check-in ho gaya! Streak: {new_streak} din!{broken_msg}{bonus_msg}"}
 
 
@@ -188,6 +207,9 @@ def create_ad(owner_id: int, data: dict) -> str:
         "reach":             0,
         "likes":             0,
         "is_copyright":      False,
+        "is_18plus":          False,
+        "copyright_flagged_at": None,
+        "flagged_18plus_at":  None,
         "created_at":        datetime.now(timezone.utc),
     }
     result = ads_col.insert_one(ad)
@@ -228,7 +250,28 @@ def delete_ad(ad_id: str):
 
 def flag_copyright(ad_id: str):
     from bson import ObjectId
-    ads_col.update_one({"_id": ObjectId(ad_id)}, {"$set": {"is_copyright": True}})
+    now = datetime.now(timezone.utc)
+    ads_col.update_one({"_id": ObjectId(ad_id)}, {"$set": {"is_copyright": True, "copyright_flagged_at": now}})
+    # Owner ko strike do
+    ad = get_ad(ad_id)
+    if ad:
+        users_col.update_one({"user_id": ad["owner_id"]}, {"$inc": {"strikes": 1}})
+
+
+def flag_18plus(ad_id: str):
+    """18+ content flag karo - 30 min baad delete hoga."""
+    from bson import ObjectId
+    now = datetime.now(timezone.utc)
+    ads_col.update_one({"_id": ObjectId(ad_id)}, {"$set": {"is_18plus": True, "flagged_18plus_at": now}})
+    # Owner ko strike do
+    ad = get_ad(ad_id)
+    if ad:
+        users_col.update_one({"user_id": ad["owner_id"]}, {"$inc": {"strikes": 1}})
+
+
+def delete_user_data(user_id: int):
+    """Admin ke liye - blocked user ka saara data delete karo."""
+    users_col.delete_one({"user_id": user_id})
 
 
 def get_user_ads(owner_id: int) -> list:
@@ -449,11 +492,11 @@ def redeem_code(code: str, user_id: int) -> dict:
         redeem_col.update_one({"code": code}, {"$set": {"is_active": False}})
 
     # User ko 1 free ad do
-    users_col.update_one({"user_id": user_id}, {"$inc": {"free_ads_earned": 1}})
+    users_col.update_one({"user_id": user_id}, {"$inc": {"free_ads_earned": 1, "total_redeemed": 1}})
 
     return {
         "success":       True,
-        "message":       "🎉 Code redeem ho gaya! 1 Free Ad tumhare account mein add ho gaya!",
+        "message":       "🎉 Code redeem ho gaya! 1 Free Ad tumhare account mein add ho gaya!\n\nAb /createad karke apna ad post karo!",
         "free_ads_given": 1,
     }
 
